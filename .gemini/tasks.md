@@ -14,32 +14,32 @@ This backlog turns `requirements.md` into dependency-ordered implementation work
 
 ### 0.1 Establish the application structure
 
-- [ ] Replace the Flutter counter starter with the Flow Reading app shell.
-- [ ] Organize code by feature (`library`, `import`, `reader`, `annotations`, `ai`, `translation`, `sync`) with shared domain, data, and UI layers.
-- [ ] Add routing, dependency injection, state management, structured logging, and environment configuration.
-- [ ] Configure Android as the initial supported release target and verify portrait/landscape behavior. (PLAT-001, PLAT-002)
-- [ ] Add CI commands for formatting, static analysis, unit/widget tests, and Android debug builds.
+- [x] Replace the Flutter counter starter with the Flow Reading app shell.
+- [x] Organize code by feature (`library`, `import`, `reader`, `annotations`, `ai`, `translation`, `sync`) with shared domain, data, and UI layers.
+- [x] Add routing, dependency injection, state management, structured logging, and environment configuration.
+- [x] Configure Android as the initial supported release target and verify portrait/landscape behavior. (PLAT-001, PLAT-002)
+- [x] Add CI commands for formatting, static analysis, unit/widget tests, and Android debug builds.
 
 ### 0.2 Select and document core technical dependencies
 
-- [ ] Evaluate and record choices for EPUB parsing, HTML/CSS rendering, local SQL/full-text search, file picking, secure storage, connectivity, networking, and serialization.
-- [ ] Document package licenses, Android compatibility, maintenance risk, and why each package was selected.
-- [ ] Add only the dependencies required for Milestone 1 to `pubspec.yaml`.
+- [x] Evaluate and record choices for EPUB parsing, HTML/CSS rendering, local SQL/full-text search, file picking, secure storage, connectivity, networking, and serialization.
+- [x] Document package licenses, Android compatibility, maintenance risk, and why each package was selected.
+- [x] Add only the dependencies required for Milestone 1 to `pubspec.yaml`.
 
 ### 0.3 Define the canonical book model first
 
-- [ ] Model book metadata, table of contents, chapters, blocks, paragraphs, sentences, words, images, formatting, annotations, glossary, chapter overview, and reading state.
-- [ ] Define deterministic stable IDs for chapters, paragraphs, sentences, and words; IDs must survive app restarts and repagination. (BOOK-008, READ-008, AI-006)
-- [ ] Define a logical reading locator using stable content ID plus character/word offset, with migration/version fields.
-- [ ] Define repositories so domain logic is independent of the database and EPUB parser.
-- [ ] Add serialization and round-trip tests, including reordered pagination and duplicate text cases.
+- [x] Model book metadata, table of contents, chapters, blocks, paragraphs, sentences, words, images, formatting, annotations, glossary, chapter overview, and reading state.
+- [x] Define deterministic stable IDs for chapters, paragraphs, sentences, and words; IDs must survive app restarts and repagination. (BOOK-008, READ-008, AI-006)
+- [x] Define a logical reading locator using stable content ID plus character/word offset, with migration/version fields.
+- [x] Define repositories so domain logic is independent of the database and EPUB parser.
+- [x] Add serialization and round-trip tests, including reordered pagination and duplicate text cases.
 
 ### 0.4 Create the local persistence layer
 
-- [ ] Design tables and indexes for books, canonical content, reading state, annotations, cached AI results, translations, glossary entries, conversations, and pending sync operations.
-- [ ] Add transactions for atomic import and deletion.
-- [ ] Store the untouched source EPUB in app-private storage and reference it from the book record. (BOOK-007)
-- [ ] Verify all local reading data remains accessible without an account and without connectivity. (PLAT-003, LIB-001, SYNC-001)
+- [x] Design tables and indexes for books, canonical content, reading state, annotations, cached AI results, translations, glossary entries, conversations, and pending sync operations.
+- [x] Add transactions for atomic import and deletion.
+- [x] Store the untouched source EPUB in app-private storage and reference it from the book record. (BOOK-007)
+- [x] Verify all local reading data remains accessible without an account and without connectivity. (PLAT-003, LIB-001, SYNC-001)
 
 ## Milestone 1 — Canonical EPUB reader prototype
 

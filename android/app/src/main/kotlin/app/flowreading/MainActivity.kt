@@ -1,4 +1,4 @@
-package com.example.flow_reading
+package app.flowreading
 
 import io.flutter.embedding.android.FlutterActivity
 

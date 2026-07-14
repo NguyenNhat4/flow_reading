@@ -1,17 +1,24 @@
-# flow_reading
+# Flow Reading
 
-A new Flutter project.
+An Android-first, offline EPUB reader built with Flutter. The foundation keeps
+canonical book content, stable reading locators, and all personal reading data on
+device without requiring an account or network connection.
 
-## Getting Started
+## Development
 
-This project is a starting point for a Flutter application.
+```sh
+flutter pub get
+dart format --output=none --set-exit-if-changed lib test
+flutter analyze
+flutter test
+flutter build apk --debug
+```
 
-A few resources to get you started if this is your first Flutter project:
+Optional compile-time configuration:
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```sh
+flutter run --dart-define=APP_FLAVOR=development --dart-define=LOG_LEVEL=INFO
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+See [architecture](docs/architecture.md), [dependency decisions](docs/dependencies.md),
+and [persistence](docs/persistence.md).
