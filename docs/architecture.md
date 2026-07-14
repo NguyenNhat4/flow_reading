@@ -33,9 +33,24 @@ app composition -------- constructs and injects concrete adapters
 ## Runtime states
 
 Every feature presents loading, empty, error, and offline states where they are
-applicable. Milestone 0 implements the accessible empty library shell. Import
-and reader state machines are owned by Milestone 1. Online-only state must wrap
-the relevant action, never the reader itself.
+applicable. The library exposes empty, importing, failed-import, duplicate, and
+missing-source states. The reader handles loading, missing-book, missing-source,
+and local rendering errors without discarding its saved logical locator.
+Online-only selection actions wrap only the requested action and never block the
+offline reader.
+
+The Milestone 1 importer validates bounded ZIP input, EPUB mimetype and
+container metadata, the OPF manifest/spine, and unsupported encryption before a
+single atomic repository commit. It rejects traversal paths, strips executable
+or embedded markup and event attributes, and converts only allowlisted native
+text formatting and local images into the canonical model. Language detection
+is an injected offline heuristic whose result is confirmed or corrected before
+commit.
+
+Pagination measures canonical blocks against the current Flutter viewport and
+reader typography. A page is disposable view state; page turns, repagination,
+TOC jumps, highlights, and process restoration continue to use canonical
+locators.
 
 ## Stable identity
 

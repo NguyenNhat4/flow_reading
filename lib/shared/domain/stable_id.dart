@@ -2,7 +2,15 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
-enum CanonicalNodeType { book, chapter, paragraph, sentence, word, image }
+enum CanonicalNodeType {
+  book,
+  chapter,
+  block,
+  paragraph,
+  sentence,
+  word,
+  image,
+}
 
 /// Creates IDs from immutable source identity and structural position.
 ///

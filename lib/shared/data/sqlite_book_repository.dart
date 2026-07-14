@@ -32,18 +32,32 @@ class SqliteBookRepository implements BookRepository {
 
   Future<List<Book>> _listBooks() async {
     final db = await _localDatabase.database;
-    final rows = await db.query('books', orderBy: 'title COLLATE NOCASE');
+    final rows = await db.rawQuery('''
+      SELECT books.*, reading_states.locator_json AS state_locator_json,
+        reading_states.progress AS state_progress,
+        reading_states.updated_at AS state_updated_at,
+        reading_states.last_opened_at AS state_last_opened_at
+      FROM books
+      LEFT JOIN reading_states ON reading_states.book_id = books.id
+      ORDER BY books.title COLLATE NOCASE
+    ''');
     return rows.map(_bookFromRow).toList(growable: false);
   }
 
   @override
   Future<Book?> getById(String id) async {
     final db = await _localDatabase.database;
-    final rows = await db.query(
-      'books',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
+    final rows = await db.rawQuery(
+      '''
+      SELECT books.*, reading_states.locator_json AS state_locator_json,
+        reading_states.progress AS state_progress,
+        reading_states.updated_at AS state_updated_at,
+        reading_states.last_opened_at AS state_last_opened_at
+      FROM books
+      LEFT JOIN reading_states ON reading_states.book_id = books.id
+      WHERE books.id = ? LIMIT 1
+    ''',
+      [id],
     );
     return rows.isEmpty ? null : _bookFromRow(rows.single);
   }
@@ -218,6 +232,7 @@ class SqliteBookRepository implements BookRepository {
   Future<void> delete(
     String bookId, {
     required bool deleteAssociatedData,
+    Set<AssociatedDataKind> retainedData = const {},
   }) async {
     final book = await getById(bookId);
     if (book == null) return;
@@ -232,14 +247,35 @@ class SqliteBookRepository implements BookRepository {
         );
         await transaction.delete('books', where: 'id = ?', whereArgs: [bookId]);
         if (deleteAssociatedData) {
-          for (final table in [
-            'annotations',
+          if (!retainedData.contains(AssociatedDataKind.highlights)) {
+            await transaction.delete(
+              'annotations',
+              where: 'book_id = ? AND kind = ?',
+              whereArgs: [bookId, AnnotationKind.highlight.name],
+            );
+          }
+          if (!retainedData.contains(AssociatedDataKind.notes)) {
+            await transaction.delete(
+              'annotations',
+              where: 'book_id = ? AND kind IN (?, ?)',
+              whereArgs: [
+                bookId,
+                AnnotationKind.note.name,
+                AnnotationKind.bookmark.name,
+              ],
+            );
+          }
+          final tables = <String>[
             'ai_cache',
-            'translations',
-            'glossary_entries',
-            'chapter_overviews',
-            'conversations',
-          ]) {
+            if (!retainedData.contains(AssociatedDataKind.translations)) ...[
+              'translations',
+              'glossary_entries',
+              'chapter_overviews',
+            ],
+            if (!retainedData.contains(AssociatedDataKind.conversations))
+              'conversations',
+          ];
+          for (final table in tables) {
             await transaction.delete(
               table,
               where: 'book_id = ?',
@@ -258,10 +294,22 @@ class SqliteBookRepository implements BookRepository {
     }
   }
 
-  Book _bookFromRow(Map<String, Object?> row) => Book.fromJson(
-    (jsonDecode(row['model_json']! as String) as Map<String, Object?>)
-      ..['sourcePath'] = row['source_path'],
-  );
+  Book _bookFromRow(Map<String, Object?> row) {
+    final json =
+        (jsonDecode(row['model_json']! as String) as Map<String, Object?>)
+          ..['sourcePath'] = row['source_path'];
+    if (row['state_locator_json'] case final String locatorJson) {
+      json['readingState'] = {
+        'bookId': row['id'],
+        'locator': jsonDecode(locatorJson),
+        'progress': row['state_progress'],
+        'updatedAt': row['state_updated_at'],
+        if (row['state_last_opened_at'] != null)
+          'lastOpenedAt': row['state_last_opened_at'],
+      };
+    }
+    return Book.fromJson(json);
+  }
 
   Map<String, Object?> _readingStateRow(ReadingState state) => {
     'book_id': state.bookId,

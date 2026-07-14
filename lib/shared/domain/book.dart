@@ -506,6 +506,7 @@ class Book {
     required this.metadata,
     required this.tableOfContents,
     required this.chapters,
+    this.images = const [],
     required this.importedAt,
     this.annotations = const [],
     this.glossary = const [],
@@ -525,6 +526,7 @@ class Book {
       json['tableOfContents'],
     ).map(TocEntry.fromJson).toList(),
     chapters: _jsonList(json['chapters']).map(Chapter.fromJson).toList(),
+    images: _jsonList(json['images']).map(BookImage.fromJson).toList(),
     importedAt: DateTime.parse(json['importedAt']! as String),
     annotations: _jsonList(
       json['annotations'],
@@ -545,6 +547,7 @@ class Book {
   final BookMetadata metadata;
   final List<TocEntry> tableOfContents;
   final List<Chapter> chapters;
+  final List<BookImage> images;
   final List<Annotation> annotations;
   final List<GlossaryEntry> glossary;
   final List<ChapterOverview> chapterOverviews;
@@ -559,6 +562,23 @@ class Book {
     metadata: metadata,
     tableOfContents: tableOfContents,
     chapters: chapters,
+    images: images,
+    importedAt: importedAt,
+    annotations: annotations,
+    glossary: glossary,
+    chapterOverviews: chapterOverviews,
+    readingState: readingState,
+    modelVersion: modelVersion,
+  );
+
+  Book withMetadata(BookMetadata value) => Book(
+    id: id,
+    sourceFingerprint: sourceFingerprint,
+    sourcePath: sourcePath,
+    metadata: value,
+    tableOfContents: tableOfContents,
+    chapters: chapters,
+    images: images,
     importedAt: importedAt,
     annotations: annotations,
     glossary: glossary,
@@ -574,6 +594,7 @@ class Book {
     'metadata': metadata.toJson(),
     'tableOfContents': tableOfContents.map((value) => value.toJson()).toList(),
     'chapters': chapters.map((value) => value.toJson()).toList(),
+    'images': images.map((value) => value.toJson()).toList(),
     'annotations': annotations.map((value) => value.toJson()).toList(),
     'glossary': glossary.map((value) => value.toJson()).toList(),
     'chapterOverviews': chapterOverviews

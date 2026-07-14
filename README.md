@@ -4,6 +4,13 @@ An Android-first, offline EPUB reader built with Flutter. The foundation keeps
 canonical book content, stable reading locators, and all personal reading data on
 device without requiring an account or network connection.
 
+Milestone 1 is complete: users can import and validate unprotected EPUBs,
+confirm the detected source language, search and sort the local library, read
+native swipeable pages, change typography and reading themes, resume after a
+restart, navigate a nested table of contents, select/copy text, and save stable
+local highlights. AI-backed selection actions remain clearly unavailable until
+Milestone 2 configuration is implemented.
+
 ## Development
 
 ```sh
@@ -13,6 +20,10 @@ flutter analyze
 flutter test
 flutter build apk --debug
 ```
+
+The import test fixtures are generated in memory and cover valid,
+missing-metadata, image-heavy, nested-TOC, RTL/Unicode, malformed, and DRM-marked
+EPUBs without including copyrighted book content.
 
 Optional compile-time configuration:
 

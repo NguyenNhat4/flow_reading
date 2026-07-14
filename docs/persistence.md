@@ -6,6 +6,9 @@ Schema version 1 is created by `LocalDatabase`. Foreign keys and WAL are enabled
 
 - `books` references the byte-for-byte source EPUB and stores a versioned model
   snapshot for fast local loading.
+- The model snapshot also records the sanitized image manifest. Image bytes are
+  loaded from the untouched app-private EPUB only by normalized archive path;
+  imported markup never receives filesystem access.
 - `chapters` and `canonical_content` normalize stable content. The latter stores
   blocks, paragraphs, sentences, and words with hierarchy and source order.
 - `content_fts` is an FTS5 projection used for local search and context retrieval.

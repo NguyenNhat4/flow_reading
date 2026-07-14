@@ -7,8 +7,14 @@ abstract interface class BookRepository {
   Future<Book?> getById(String id);
   Future<Book?> getBySourceFingerprint(String fingerprint);
   Future<void> import(Book book, Uint8List untouchedSourceBytes);
-  Future<void> delete(String bookId, {required bool deleteAssociatedData});
+  Future<void> delete(
+    String bookId, {
+    required bool deleteAssociatedData,
+    Set<AssociatedDataKind> retainedData = const {},
+  });
 }
+
+enum AssociatedDataKind { highlights, notes, translations, conversations }
 
 abstract interface class ReadingStateRepository {
   Future<ReadingState?> get(String bookId);

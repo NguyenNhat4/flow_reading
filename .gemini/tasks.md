@@ -4,11 +4,11 @@ This backlog turns `requirements.md` into dependency-ordered implementation work
 
 ## Definition of done for every implementation task
 
-- [ ] Production code, loading/empty/error/offline states, and accessibility semantics are implemented.
-- [ ] Unit, widget, or integration tests cover the main path and important failures.
-- [ ] `flutter analyze` and `flutter test` pass.
-- [ ] Persistent-data changes include a migration or a documented reset strategy during prototyping.
-- [ ] No API keys, copyrighted book content, or personal reading data are written to logs.
+- [x] Production code, loading/empty/error/offline states, and accessibility semantics are implemented.
+- [x] Unit, widget, or integration tests cover the main path and important failures.
+- [x] `flutter analyze` and `flutter test` pass.
+- [x] Persistent-data changes include a migration or a documented reset strategy during prototyping.
+- [x] No API keys, copyrighted book content, or personal reading data are written to logs.
 
 ## Milestone 0 — Foundation and architecture
 
@@ -45,60 +45,60 @@ This backlog turns `requirements.md` into dependency-ordered implementation work
 
 ### 1.1 Build the EPUB import pipeline
 
-- [ ] Add an Android file-picker flow restricted to EPUB candidates.
-- [ ] Validate the ZIP/container structure, package document, content manifest, and unsupported DRM before committing any data. (BOOK-001, BOOK-005, BOOK-006)
-- [ ] Extract metadata, cover, table of contents, chapters, paragraphs, sentences, words, images, supported formatting, and reading order. (BOOK-002)
-- [ ] Sanitize imported markup and prevent external scripts or unsafe file access.
-- [ ] Generate canonical stable IDs and persist the complete model in one atomic operation.
-- [ ] Preserve the original EPUB byte-for-byte and detect duplicate imports. (BOOK-007)
-- [ ] Show import progress and readable errors; a failed import must not alter existing books.
-- [ ] Add fixtures/tests for valid, malformed, missing-metadata, image-heavy, nested-TOC, RTL/Unicode, and DRM-marked EPUBs.
+- [x] Add an Android file-picker flow restricted to EPUB candidates.
+- [x] Validate the ZIP/container structure, package document, content manifest, and unsupported DRM before committing any data. (BOOK-001, BOOK-005, BOOK-006)
+- [x] Extract metadata, cover, table of contents, chapters, paragraphs, sentences, words, images, supported formatting, and reading order. (BOOK-002)
+- [x] Sanitize imported markup and prevent external scripts or unsafe file access.
+- [x] Generate canonical stable IDs and persist the complete model in one atomic operation.
+- [x] Preserve the original EPUB byte-for-byte and detect duplicate imports. (BOOK-007)
+- [x] Show import progress and readable errors; a failed import must not alter existing books.
+- [x] Add fixtures/tests for valid, malformed, missing-metadata, image-heavy, nested-TOC, RTL/Unicode, and DRM-marked EPUBs.
 
 ### 1.2 Implement source-language detection
 
-- [ ] Detect a primary language from representative book text during import and save its confidence/source. (BOOK-003, LANG-001)
-- [ ] Let the user confirm or correct the detected language. (BOOK-004)
-- [ ] Keep the detection service replaceable so a future offline implementation can be introduced.
+- [x] Detect a primary language from representative book text during import and save its confidence/source. (BOOK-003, LANG-001)
+- [x] Let the user confirm or correct the detected language. (BOOK-004)
+- [x] Keep the detection service replaceable so a future offline implementation can be introduced.
 
 ### 1.3 Build the local library
 
-- [ ] Display cover, title, author, reading progress, and last-opened time for every imported book. (LIB-002)
-- [ ] Open a selected book at its latest logical reading locator. (LIB-003)
-- [ ] Implement library search and sorting by title, author, recent activity, and progress. (LIB-006)
-- [ ] Add empty, importing, failed-import, and missing-source-file states.
-- [ ] Confirm before removing a book. (LIB-004)
-- [ ] On removal, let the user independently retain or delete notes, highlights, translations, and AI conversations. (LIB-005)
+- [x] Display cover, title, author, reading progress, and last-opened time for every imported book. (LIB-002)
+- [x] Open a selected book at its latest logical reading locator. (LIB-003)
+- [x] Implement library search and sorting by title, author, recent activity, and progress. (LIB-006)
+- [x] Add empty, importing, failed-import, and missing-source-file states.
+- [x] Confirm before removing a book. (LIB-004)
+- [x] On removal, let the user independently retain or delete notes, highlights, translations, and AI conversations. (LIB-005)
 
 ### 1.4 Implement pagination and navigation
 
-- [ ] Build a pagination engine for canonical reflowable content using the available viewport and reader settings. (READ-001)
-- [ ] Render supported text styles, headings, lists, links, and inline/block images without requiring fixed EPUB page layout.
-- [ ] Add horizontal page gestures: swipe left for next and right for previous, with sensible first/last-page behavior. (READ-002, READ-003)
-- [ ] Add table-of-contents navigation and a lightweight position/progress indicator. (READ-006)
-- [ ] Save reading position on page changes, app backgrounding, and app close. (READ-007)
-- [ ] Restore the logical position after process death and app restart.
-- [ ] Test pagination with small/large screens and portrait/landscape orientations.
+- [x] Build a pagination engine for canonical reflowable content using the available viewport and reader settings. (READ-001)
+- [x] Render supported text styles, headings, lists, links, and inline/block images without requiring fixed EPUB page layout.
+- [x] Add horizontal page gestures: swipe left for next and right for previous, with sensible first/last-page behavior. (READ-002, READ-003)
+- [x] Add table-of-contents navigation and a lightweight position/progress indicator. (READ-006)
+- [x] Save reading position on page changes, app backgrounding, and app close. (READ-007)
+- [x] Restore the logical position after process death and app restart.
+- [x] Test pagination with small/large screens and portrait/landscape orientations.
 
 ### 1.5 Add reader customization and stable repagination
 
-- [ ] Add font family, font size, line spacing, margins, and orientation-aware layout controls.
-- [ ] Add light, dark, and paper-like themes. (READ-005)
-- [ ] Repaginate after settings or orientation changes while preserving the logical reading position. (READ-004)
-- [ ] Confirm annotations and contextual references remain attached to stable content IDs after every repagination. (READ-008)
-- [ ] Add performance tests for opening, paginating, and repaginating representative large chapters.
+- [x] Add font family, font size, line spacing, margins, and orientation-aware layout controls.
+- [x] Add light, dark, and paper-like themes. (READ-005)
+- [x] Repaginate after settings or orientation changes while preserving the logical reading position. (READ-004)
+- [x] Confirm annotations and contextual references remain attached to stable content IDs after every repagination. (READ-008)
+- [x] Add performance tests for opening, paginating, and repaginating representative large chapters.
 
 ### 1.6 Implement text selection primitives
 
-- [ ] Resolve a tap to a canonical word ID and show Define, Ask AI, Translate, Highlight, and Copy. (WORD-001, WORD-002)
-- [ ] Support long-press selection of a sentence or longer passage across rendered spans/pages. (PASS-001)
-- [ ] Show Explain, Ask AI, Translate, Summarize, Explain Grammar, Highlight, and Copy. (PASS-002)
-- [ ] Preserve selection as stable start/end locators so it survives repagination.
-- [ ] Implement Copy and local Highlight now; route AI-dependent actions to a clear setup/offline state until Milestone 2.
+- [x] Resolve a tap to a canonical word ID and show Define, Ask AI, Translate, Highlight, and Copy. (WORD-001, WORD-002)
+- [x] Support long-press selection of a sentence or longer passage across rendered spans/pages. (PASS-001)
+- [x] Show Explain, Ask AI, Translate, Summarize, Explain Grammar, Highlight, and Copy. (PASS-002)
+- [x] Preserve selection as stable start/end locators so it survives repagination.
+- [x] Implement Copy and local Highlight now; route AI-dependent actions to a clear setup/offline state until Milestone 2.
 
 ### Milestone 1 exit criteria
 
-- [ ] A user can import an unprotected EPUB, browse it in the library, read it as swipeable pages offline, customize the display, restart at the saved position, and select text.
-- [ ] Stable-locator tests prove that position and highlights survive font, margin, theme, and orientation changes.
+- [x] A user can import an unprotected EPUB, browse it in the library, read it as swipeable pages offline, customize the display, restart at the saved position, and select text.
+- [x] Stable-locator tests prove that position and highlights survive font, margin, theme, and orientation changes.
 
 ## Milestone 2 — Context-aware AI prototype
 
@@ -250,8 +250,8 @@ This backlog turns `requirements.md` into dependency-ordered implementation work
 
 ## Suggested first implementation slice
 
-- [ ] Complete 0.1–0.4.
-- [ ] Import one known-good, unprotected EPUB into the canonical model.
-- [ ] Render one chapter as swipeable pages using stable logical locators.
-- [ ] Prove a saved position survives font-size change, orientation change, and app restart.
-- [ ] Do not begin AI integration until this slice and its tests pass.
+- [x] Complete 0.1–0.4.
+- [x] Import one known-good, unprotected EPUB into the canonical model.
+- [x] Render one chapter as swipeable pages using stable logical locators.
+- [x] Prove a saved position survives font-size change, orientation change, and app restart.
+- [x] Do not begin AI integration until this slice and its tests pass.
