@@ -20,5 +20,27 @@ Optional compile-time configuration:
 flutter run --dart-define=APP_FLAVOR=development --dart-define=LOG_LEVEL=INFO
 ```
 
+### Android build compatibility
+
+The project intentionally pins `file_picker` to `12.0.0-beta.7`. Flutter 3.44
+uses Android Gradle Plugin (AGP) 9, while `file_picker` 11.0.2 can leave its
+Kotlin Android implementation uncompiled when the project uses Flutter's legacy
+Kotlin compatibility mode. The pinned prerelease includes the AGP 9 plugin
+registration fix.
+
+Keep `android.builtInKotlin=false` and `android.newDsl=false` in
+`android/gradle.properties` until every Android plugin in the dependency graph
+supports AGP's Built-in Kotlin mode. If Android reports that
+`FilePickerPlugin` cannot be found, refresh the resolved plugins and rebuild:
+
+```sh
+flutter clean
+flutter pub get
+flutter build apk --debug
+```
+
+Replace the prerelease pin with a stable `file_picker` 12 release only after
+that stable release contains the same AGP 9 fix and the debug APK build passes.
+
 See [architecture](docs/architecture.md), [dependency decisions](docs/dependencies.md),
 and [persistence](docs/persistence.md).

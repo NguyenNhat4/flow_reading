@@ -11,7 +11,8 @@ dependencies:
     sdk: flutter
   archive: ^4.0.9
   crypto: ^3.0.6
-  file_picker: ^11.0.2
+  # 12.0.0-beta.3+ fixes plugin registration with AGP 9 in legacy Kotlin mode.
+  file_picker: 12.0.0-beta.7
   flutter_riverpod: ^3.3.2
   go_router: ^17.3.0
   html: ^0.15.6
