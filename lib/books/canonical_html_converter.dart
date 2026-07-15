@@ -5,6 +5,7 @@ import 'package:flow_reading/books/book_models.dart';
 import 'package:flow_reading/books/content_identifiers.dart';
 import 'package:flow_reading/books/epub_package_parser.dart';
 import 'package:flow_reading/books/epub_validator.dart';
+import 'package:flow_reading/books/sentence_segmenter.dart';
 import 'package:flow_reading/shared/app_failure.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html;
@@ -249,12 +250,15 @@ final class _ChapterConversion {
     Element? element,
   }) {
     if (spans.isEmpty) return;
+    final blockId = _blockId('paragraph', locator);
+    final text = spans.map((span) => span.text).join();
     _add(
       ParagraphBlock(
-        id: _blockId('paragraph', locator),
+        id: blockId,
         chapterId: chapter.id,
         order: blocks.length,
         spans: spans,
+        sentences: SentenceSegmenter.segment(blockId: blockId, text: text),
       ),
       element,
     );
