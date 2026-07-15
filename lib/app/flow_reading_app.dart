@@ -10,6 +10,8 @@ import 'package:flow_reading/platform/epub_picker.dart';
 import 'package:flow_reading/platform/local_book_file_storage.dart';
 import 'package:flow_reading/platform/mlkit_book_language_detector.dart';
 import 'package:flow_reading/platform/sqlite_book_repository.dart';
+import 'package:flow_reading/platform/sqlite_reading_position_repository.dart';
+import 'package:flow_reading/reader/reader_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -34,12 +36,14 @@ final class _LibraryServices {
     required this.storage,
     required this.importService,
     required this.picker,
+    required this.positionRepository,
   });
 
   final BookRepository repository;
   final BookFileStorage storage;
   final BookImportService importService;
   final AndroidEpubPicker picker;
+  final ReadingPositionRepository positionRepository;
 
   static Future<_LibraryServices> create() async {
     final supportDirectory = await getApplicationSupportDirectory();
@@ -58,6 +62,7 @@ final class _LibraryServices {
         languageDetection: languageDetection,
       ),
       picker: AndroidEpubPicker(),
+      positionRepository: SqliteReadingPositionRepository(database),
     );
   }
 }
@@ -208,6 +213,19 @@ class _LibraryScreenState extends State<_LibraryScreen> {
     if (mounted) _refresh();
   }
 
+  Future<void> _openBook(BookSummary book) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ReaderScreen(
+          book: book,
+          bookRepository: widget.services.repository,
+          positionRepository: widget.services.positionRepository,
+        ),
+      ),
+    );
+    if (mounted) _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -234,44 +252,29 @@ class _LibraryScreenState extends State<_LibraryScreen> {
               child: Text('Import an EPUB to start reading.'),
             );
           }
-          return ListView.builder(
-            itemCount: books.length,
-            itemBuilder: (context, index) {
-              final book = books[index];
-              return ListTile(
-                leading: _BookCover(
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+                itemCount: books.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) => _BookCard(
+                  book: books[index],
                   storage: widget.services.storage,
-                  path: book.coverPath,
-                ),
-                title: Text(book.title),
-                subtitle: Text(
-                  [
-                    if (book.authors.isNotEmpty) book.authors.join(', '),
-                    if (book.detectedLanguage != null) book.detectedLanguage!,
-                  ].join(' • '),
-                ),
-                trailing: PopupMenuButton<_BookAction>(
-                  onSelected: (action) {
+                  onOpen: () => _openBook(books[index]),
+                  onAction: (action) {
                     switch (action) {
                       case _BookAction.language:
-                        _changeLanguage(book);
+                        _changeLanguage(books[index]);
                       case _BookAction.delete:
-                        _deleteBook(book);
+                        _deleteBook(books[index]);
                     }
                   },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: _BookAction.language,
-                      child: Text('Set language'),
-                    ),
-                    PopupMenuItem(
-                      value: _BookAction.delete,
-                      child: Text('Remove book'),
-                    ),
-                  ],
                 ),
-              );
-            },
+              ),
+            ),
           );
         },
       ),
@@ -280,6 +283,96 @@ class _LibraryScreenState extends State<_LibraryScreen> {
 }
 
 enum _BookAction { language, delete }
+
+class _BookCard extends StatelessWidget {
+  const _BookCard({
+    required this.book,
+    required this.storage,
+    required this.onOpen,
+    required this.onAction,
+  });
+
+  final BookSummary book;
+  final BookFileStorage storage;
+  final VoidCallback onOpen;
+  final ValueChanged<_BookAction> onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final openedAt = book.lastOpenedAt?.toLocal();
+    final lastOpened = openedAt == null
+        ? 'Never opened'
+        : 'Last opened ${localizations.formatMediumDate(openedAt)}, '
+              '${TimeOfDay.fromDateTime(openedAt).format(context)}';
+    final progress = book.readingProgress.clamp(0.0, 1.0);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _BookCover(storage: storage, path: book.coverPath),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      book.authors.isEmpty
+                          ? 'Unknown author'
+                          : book.authors.join(', '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LinearProgressIndicator(value: progress),
+                        ),
+                        const SizedBox(width: 10),
+                        Text('${(progress * 100).round()}%'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      lastOpened,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<_BookAction>(
+                onSelected: onAction,
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: _BookAction.language,
+                    child: Text('Set language'),
+                  ),
+                  PopupMenuItem(
+                    value: _BookAction.delete,
+                    child: Text('Remove book'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _BookCover extends StatelessWidget {
   const _BookCover({required this.storage, required this.path});
@@ -290,15 +383,41 @@ class _BookCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final coverPath = path;
-    if (coverPath == null) return const Icon(Icons.menu_book, size: 40);
+    if (coverPath == null) return const _BookCoverFallback();
     return FutureBuilder<Uint8List?>(
       future: storage.readBytes(coverPath),
       builder: (context, snapshot) {
         final bytes = snapshot.data;
         return bytes == null
-            ? const Icon(Icons.menu_book, size: 40)
-            : Image.memory(bytes, width: 40, height: 56, fit: BoxFit.cover);
+            ? const _BookCoverFallback()
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.memory(
+                  bytes,
+                  width: 64,
+                  height: 92,
+                  fit: BoxFit.cover,
+                ),
+              );
       },
+    );
+  }
+}
+
+class _BookCoverFallback extends StatelessWidget {
+  const _BookCoverFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 64,
+      height: 92,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Icon(Icons.menu_book, size: 36),
     );
   }
 }

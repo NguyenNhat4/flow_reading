@@ -133,6 +133,8 @@ Run the complete test suite only when:
 * Public interfaces changed.
 * The task explicitly requires it.
 
-At the end of each task you've done, add/update revelant helpful contexts to files in /docs or create new one  in markdown format, you can organize them in a folder if needed and update context-map for references
+At the end of each task, add/update revelant helpful contexts to files in /docs or create new one  in markdown format, you can organize them in a folder if needed and update context-map for references
+
+
 
 Do not create a separate completion document.

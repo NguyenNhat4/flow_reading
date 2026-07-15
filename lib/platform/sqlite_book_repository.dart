@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flow_reading/books/book_models.dart';
 import 'package:flow_reading/books/book_repository.dart';
+import 'package:flow_reading/books/text_anchors.dart';
 import 'package:flow_reading/platform/app_database.dart';
 import 'package:flow_reading/shared/app_failure.dart';
 
@@ -51,6 +52,27 @@ final class SqliteBookRepository implements BookRepository {
   Future<List<BookSummary>> listBooks() => _guard(() async {
     final database = await appDatabase.open();
     final rows = await database.query('books', orderBy: 'imported_at DESC');
+    final stateRows = await database.query('reading_states');
+    final statesByBook = {
+      for (final row in stateRows) row['book_id'] as String: row,
+    };
+    final contentRows = await database.rawQuery('''
+SELECT chapters.book_id, chapters.spine_order, chapter_content.content_json
+FROM chapters
+JOIN chapter_content ON chapter_content.chapter_id = chapters.id
+ORDER BY chapters.book_id, chapters.spine_order''');
+    final chaptersByBook = <String, List<Chapter>>{};
+    for (final row in contentRows) {
+      final bookId = row['book_id'] as String;
+      chaptersByBook
+          .putIfAbsent(bookId, () => [])
+          .add(
+            Chapter.fromJson(
+              (jsonDecode(row['content_json'] as String) as Map)
+                  .cast<String, Object?>(),
+            ),
+          );
+    }
     return rows.map((row) {
       final authors = (jsonDecode(row['authors_json'] as String) as List)
           .cast<String>();
@@ -68,6 +90,7 @@ final class SqliteBookRepository implements BookRepository {
       final cover = coverId == null
           ? null
           : assets.where((asset) => asset.id == coverId).firstOrNull;
+      final state = statesByBook[row['id'] as String];
       return BookSummary(
         id: row['id'] as String,
         title: row['title'] as String,
@@ -75,6 +98,11 @@ final class SqliteBookRepository implements BookRepository {
         importedAt: DateTime.parse(row['imported_at'] as String),
         coverPath: cover?.localPath,
         detectedLanguage: row['detected_language'] as String?,
+        readingProgress: _readingProgress(
+          chaptersByBook[row['id'] as String] ?? const [],
+          state?['anchor_json'] as String?,
+        ),
+        lastOpenedAt: _parseDateTime(state?['updated_at'] as String?),
       );
     }).toList();
   });
@@ -159,4 +187,54 @@ ORDER BY chapters.spine_order''',
       throw const DatabaseFailure();
     }
   }
+}
+
+double _readingProgress(List<Chapter> chapters, String? locatorJson) {
+  if (chapters.isEmpty || locatorJson == null) return 0;
+  ReadingLocator locator;
+  try {
+    locator = ReadingLocator.fromJson(
+      (jsonDecode(locatorJson) as Map).cast<String, Object?>(),
+    );
+  } catch (_) {
+    return 0;
+  }
+
+  final blocks = chapters.expand((chapter) => chapter.blocks).toList();
+  if (blocks.isEmpty) return 0;
+  final total = blocks.fold<int>(0, (sum, block) => sum + _blockExtent(block));
+  var before = 0;
+  for (final block in blocks) {
+    if (block.chapterId == locator.anchor.chapterId &&
+        block.id == locator.anchor.blockId) {
+      final extent = _blockExtent(block);
+      final offset = locator.anchor.startOffset.clamp(0, extent);
+      return ((before + offset) / total).clamp(0.0, 1.0);
+    }
+    before += _blockExtent(block);
+  }
+  return 0;
+}
+
+int _blockExtent(ContentBlock block) {
+  final length = switch (block) {
+    ParagraphBlock() => block.text.length,
+    HeadingBlock() => block.text.length,
+    QuoteBlock() => block.text.length,
+    ListBlock() => block.items.fold<int>(
+      0,
+      (sum, item) => sum + _listItemExtent(item),
+    ),
+    ImageBlock() => 1,
+  };
+  return length < 1 ? 1 : length;
+}
+
+int _listItemExtent(BookListItem item) =>
+    item.text.length +
+    item.children.fold<int>(0, (sum, child) => sum + _listItemExtent(child));
+
+DateTime? _parseDateTime(String? value) {
+  if (value == null) return null;
+  return DateTime.tryParse(value)?.toLocal();
 }

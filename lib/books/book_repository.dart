@@ -8,6 +8,8 @@ final class BookSummary {
     required this.importedAt,
     this.coverPath,
     this.detectedLanguage,
+    this.readingProgress = 0,
+    this.lastOpenedAt,
   });
 
   final String id;
@@ -16,6 +18,8 @@ final class BookSummary {
   final DateTime importedAt;
   final String? coverPath;
   final String? detectedLanguage;
+  final double readingProgress;
+  final DateTime? lastOpenedAt;
 }
 
 abstract interface class BookRepository {

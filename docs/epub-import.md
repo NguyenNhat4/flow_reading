@@ -31,6 +31,13 @@ The library UI depends on the picker and books-owned contracts. Platform wiring
 is created in `lib/app/flow_reading_app.dart`; widgets do not open databases or
 read files directly.
 
+After a successful save, the library reloads immediately and presents the
+persisted cover, title, authors, reading progress, and last-opened time. Opening
+a book loads canonical chapters locally through `BookRepository`; reading state
+is stored as a stable `ReadingLocator` in `reading_states`, never as a visual
+page number. Books without reading state display zero progress and have not yet
+been opened.
+
 ## Validation
 
 `EpubValidator` accepts bytes and returns a decoded archive, package-document

@@ -232,7 +232,7 @@ Support:
 
 ---
 
-## TASK-111 — Add import progress reporting
+## TASK-111 — 
 
 **Priority:** P1
 
@@ -269,3 +269,4 @@ Detect the primary language after import.
 * Failure to detect a language does not block reading.
 
 ---
+Add import progress reporting

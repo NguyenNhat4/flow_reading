@@ -13,6 +13,7 @@ Do not read every linked document by default.
 
 | Task area                   | Read                                                                 | Main code location                 |
 | --------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
+| Project orientation and progress | `docs/project-architecture-guide.md`                           | All approved modules               |
 | EPUB validation             | Validation section of `docs/epub-import.md`                         | `lib/books/epub_validator.dart`    |
 | Original EPUB storage       | Storage lifecycle section of `docs/epub-import.md`                  | `lib/books/`, `lib/platform/`      |
 | Metadata, spine, and TOC    | Package parsing section of `docs/epub-import.md`, `docs/data-model.md` | `lib/books/`                     |
@@ -22,7 +23,7 @@ Do not read every linked document by default.
 | Source language detection   | Language detection section of `docs/epub-import.md`                 | `lib/books/`, `lib/platform/`      |
 | Canonical book model        | `docs/data-model.md`, `docs/invariants.md`                           | `lib/books/`                       |
 | Stable IDs and text anchors | `docs/invariants.md`, `docs/data-model.md`                           | `lib/books/`, `lib/shared/`        |
-| Library UI                  | Import orchestration section of `docs/epub-import.md`, relevant task | `lib/app/`                         |
+| Library UI and local opening | Import orchestration section of `docs/epub-import.md`, reading state in `docs/invariants.md` | `lib/app/`, `lib/reader/` |
 | Pagination                  | Pagination section of `docs/architecture.md`, `docs/invariants.md`   | `lib/reader/`                      |
 | Reading position            | `docs/invariants.md`, reader section of `docs/architecture.md`       | `lib/reader/`                      |
 | Highlights and notes        | `docs/invariants.md`, annotation section of `docs/data-model.md`     | `lib/reader/`                      |
