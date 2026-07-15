@@ -121,6 +121,18 @@ final class LocalBookFileStorage implements BookFileStorage {
   @override
   Future<bool> contains(String bookId) => _bookDirectory(bookId).exists();
 
+  @override
+  Future<Uint8List?> readBytes(String localPath) async {
+    try {
+      final file = File(localPath);
+      return await file.exists() ? file.readAsBytes() : null;
+    } on FileSystemException catch (error) {
+      throw FileSystemFailure(
+        message: 'A book asset could not be read: $error',
+      );
+    }
+  }
+
   Directory _bookDirectory(String bookId) =>
       Directory('${_booksDirectory.path}${Platform.pathSeparator}$bookId');
 

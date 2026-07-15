@@ -40,4 +40,6 @@ abstract interface class BookFileStorage {
   Future<void> delete(String bookId);
 
   Future<bool> contains(String bookId);
+
+  Future<Uint8List?> readBytes(String localPath);
 }
