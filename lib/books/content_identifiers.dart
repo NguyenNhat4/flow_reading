@@ -89,7 +89,7 @@ abstract final class ContentIdentifiers {
 }
 
 /// A layout-independent selection within one canonical source block.
-final class StableTextRange {
+base class StableTextRange {
   StableTextRange({
     required this.bookId,
     required this.chapterId,
