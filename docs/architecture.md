@@ -123,6 +123,31 @@ Pagination
 Reader
 ```
 
+## EPUB import
+
+EPUB import is a staged pipeline owned by `books` contracts and implemented by
+`platform` integrations:
+
+```text
+Selected EPUB bytes
+  → validate ZIP/package/spine/DRM
+  → derive content-addressed book ID
+  → stage unchanged original file
+  → parse metadata, navigation, and spine
+  → convert chapter HTML into canonical blocks
+  → segment paragraph sentences
+  → detect source language
+  → stage extracted assets
+  → commit files and persist the canonical book
+```
+
+Parsing and canonical conversion run outside the UI isolate. Cancellation or
+failure before persistence rolls back staged files. If database persistence
+fails after file promotion, the promoted book directory is removed.
+
+See `docs/epub-import.md` for contracts, stable identity inputs, cleanup rules,
+and implementation entry points.
+
 Optional intelligence flow:
 
 ```text
@@ -153,6 +178,12 @@ Examples:
 - `TranslationRepository`
 - `SettingsRepository`
 - `AiResponseCache`
+
+The local database is versioned. Canonical chapter content is persisted, while
+pagination remains derived and must never have a permanent `pages` table.
+
+Book import writes its book, chapter, and chapter-content rows in one database
+transaction. Database exceptions must be translated into application failures.
 
 ## Implementation order
 
