@@ -5,6 +5,7 @@ import 'package:flow_reading/books/book_file_storage.dart';
 import 'package:flow_reading/books/book_import_service.dart';
 import 'package:flow_reading/books/book_language_detector.dart';
 import 'package:flow_reading/books/book_repository.dart';
+import 'package:flow_reading/books/book_removal_service.dart';
 import 'package:flow_reading/platform/app_database.dart';
 import 'package:flow_reading/platform/epub_picker.dart';
 import 'package:flow_reading/platform/local_book_file_storage.dart';
@@ -37,6 +38,7 @@ final class _LibraryServices {
     required this.importService,
     required this.picker,
     required this.positionRepository,
+    required this.removalService,
   });
 
   final BookRepository repository;
@@ -44,6 +46,7 @@ final class _LibraryServices {
   final BookImportService importService;
   final AndroidEpubPicker picker;
   final ReadingPositionRepository positionRepository;
+  final BookRemovalService removalService;
 
   static Future<_LibraryServices> create() async {
     final supportDirectory = await getApplicationSupportDirectory();
@@ -63,6 +66,10 @@ final class _LibraryServices {
       ),
       picker: AndroidEpubPicker(),
       positionRepository: SqliteReadingPositionRepository(database),
+      removalService: BookRemovalService(
+        repository: repository,
+        storage: storage,
+      ),
     );
   }
 }
@@ -166,11 +173,11 @@ class _LibraryScreenState extends State<_LibraryScreen> {
     );
     if (confirmed != true) return;
     try {
-      await widget.services.repository.delete(book.id);
-      await widget.services.storage.delete(book.id);
+      await widget.services.removalService.remove(book.id);
       if (mounted) _refresh();
     } catch (error) {
       if (!mounted) return;
+      _refresh();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.toString())));

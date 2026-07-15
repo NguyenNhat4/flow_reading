@@ -74,4 +74,31 @@ void main() {
     await storage.delete(staged.bookId);
     expect(await storage.contains(staged.bookId), isFalse);
   });
+
+  test('stages removal and can restore the active book directory', () async {
+    final imported =
+        await storage.stageOriginal(Uint8List.fromList([2, 4, 6]))
+            as StagedBookFiles;
+    await storage.commit(imported);
+
+    final removal = await storage.stageBookRemoval(imported.bookId);
+    expect(await storage.contains(imported.bookId), isFalse);
+
+    await storage.rollbackBookRemoval(removal);
+    expect(await storage.contains(imported.bookId), isTrue);
+    expect(await File(imported.originalFilePath).readAsBytes(), [2, 4, 6]);
+  });
+
+  test('committing staged removal permanently deletes book files', () async {
+    final imported =
+        await storage.stageOriginal(Uint8List.fromList([1, 3, 5]))
+            as StagedBookFiles;
+    await storage.commit(imported);
+
+    final removal = await storage.stageBookRemoval(imported.bookId);
+    await storage.commitBookRemoval(removal);
+
+    expect(await storage.contains(imported.bookId), isFalse);
+    expect(await Directory(removal.stagingDirectory!).exists(), isFalse);
+  });
 }

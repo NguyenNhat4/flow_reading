@@ -2,10 +2,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flow_reading/books/book_file_storage.dart';
+import 'package:flow_reading/books/book_removal_service.dart';
 import 'package:flow_reading/books/content_identifiers.dart';
 import 'package:flow_reading/shared/app_failure.dart';
 
-final class LocalBookFileStorage implements BookFileStorage {
+final class LocalBookFileStorage
+    implements BookFileStorage, BookRemovalStorage {
   LocalBookFileStorage(this.applicationSupportDirectory);
 
   final Directory applicationSupportDirectory;
@@ -114,6 +116,60 @@ final class LocalBookFileStorage implements BookFileStorage {
     } on FileSystemException catch (error) {
       throw FileSystemFailure(
         message: 'The stored book could not be removed: $error',
+      );
+    }
+  }
+
+  @override
+  Future<StagedBookRemoval> stageBookRemoval(String bookId) async {
+    final activeDirectory = _bookDirectory(bookId);
+    if (!await activeDirectory.exists()) {
+      return StagedBookRemoval(bookId: bookId);
+    }
+    final stagingDirectory = Directory(
+      '${_booksDirectory.path}${Platform.pathSeparator}'
+      '.removing-$bookId-${DateTime.now().microsecondsSinceEpoch}',
+    );
+    try {
+      await activeDirectory.rename(stagingDirectory.path);
+      return StagedBookRemoval(
+        bookId: bookId,
+        activeDirectory: activeDirectory.path,
+        stagingDirectory: stagingDirectory.path,
+      );
+    } on FileSystemException catch (error) {
+      throw FileSystemFailure(
+        message: 'The stored book could not be prepared for removal: $error',
+      );
+    }
+  }
+
+  @override
+  Future<void> commitBookRemoval(StagedBookRemoval stage) async {
+    final stagingPath = stage.stagingDirectory;
+    if (stagingPath == null) return;
+    try {
+      await _deleteIfPresent(Directory(stagingPath));
+    } on FileSystemException catch (error) {
+      throw FileSystemFailure(
+        message: 'The removed book files could not be finalized: $error',
+      );
+    }
+  }
+
+  @override
+  Future<void> rollbackBookRemoval(StagedBookRemoval stage) async {
+    final activePath = stage.activeDirectory;
+    final stagingPath = stage.stagingDirectory;
+    if (activePath == null || stagingPath == null) return;
+    try {
+      final stagingDirectory = Directory(stagingPath);
+      if (await stagingDirectory.exists()) {
+        await stagingDirectory.rename(activePath);
+      }
+    } on FileSystemException catch (error) {
+      throw FileSystemFailure(
+        message: 'The stored book could not be restored: $error',
       );
     }
   }

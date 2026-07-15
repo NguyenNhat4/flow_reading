@@ -203,12 +203,12 @@ Finished or working now:
 - EPUB checking and importing.
 - Local EPUB, image, and SQLite storage.
 - Library list with cover, title, author, progress, and last-opened time.
+- Confirmed full-book removal with staged filesystem rollback.
 - Android file selection.
 - Basic local chapter reading and saved position.
 
 Partial or not started:
 
-- Selective book removal is partial.
 - Library search and sorting are not started.
 - Proper reading pages are not started.
 - Highlights, notes, bookmarks, and reader settings are not started.

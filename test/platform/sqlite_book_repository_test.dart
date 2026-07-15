@@ -47,14 +47,22 @@ void main() {
 
   test('updates detected language and deletes all book rows', () async {
     final book = _book();
+    final otherBook = _otherBook();
     await repository.save(book);
+    await repository.save(otherBook);
 
     await repository.updateDetectedLanguage(book.id, 'vi');
-    expect((await repository.listBooks()).single.detectedLanguage, 'vi');
+    final updatedBook = (await repository.listBooks()).firstWhere(
+      (summary) => summary.id == book.id,
+    );
+    expect(updatedBook.detectedLanguage, 'vi');
 
     await repository.delete(book.id);
-    expect(await repository.listBooks(), isEmpty);
+    expect((await repository.listBooks()).map((book) => book.id), [
+      otherBook.id,
+    ]);
     expect(await repository.loadChapters(book.id), isEmpty);
+    expect(await repository.loadChapters(otherBook.id), isNotEmpty);
   });
 
   test(
@@ -125,4 +133,22 @@ Book _book() => Book(
     ),
   ],
   importedAt: DateTime.utc(2026),
+);
+
+Book _otherBook() => Book(
+  id: 'other_book',
+  metadata: const BookMetadata(title: 'Other Book'),
+  originalFile: '/books/other_book/original.epub',
+  chapters: const [
+    Chapter(
+      id: 'other-chapter',
+      bookId: 'other_book',
+      title: 'Other chapter',
+      order: 0,
+      blocks: [],
+    ),
+  ],
+  tableOfContents: const [],
+  assets: const [],
+  importedAt: DateTime.utc(2025),
 );

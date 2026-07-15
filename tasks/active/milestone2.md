@@ -36,9 +36,11 @@ Allow the user to select an EPUB from Android storage.
 
 ## TASK-203 — Implement remove-book flow
 
+**Status:** Complete
+
 **Priority:** P1
 
-Allow users to choose whether to delete:
+Remove the selected local book and all data owned by it:
 
 * Original EPUB.
 * Parsed content.

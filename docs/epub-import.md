@@ -93,6 +93,13 @@ Cleanup rules:
 - deletion removes database rows and the application-controlled book directory,
   never the user's original source file.
 
+Book removal first renames the application-controlled book directory to a
+temporary removal path. The database then deletes the selected book in one
+transaction; foreign-key cascades remove its canonical content and all related
+local state without touching other books. A database failure restores the
+staged directory, while success permanently removes it. The library always asks
+for confirmation before starting this flow.
+
 ## Package parsing
 
 `EpubPackageParser` reads the OPF package and produces `EpubImportDraft`.
