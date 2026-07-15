@@ -4,6 +4,8 @@ This is a local-first Flutter Android EPUB reader with contextual AI features.
 
 The application imports EPUB books, converts them into a canonical book representation, paginates content for reading, and attaches reading state, annotations, translations, and AI artifacts to stable content identifiers.
 
+
+** external phone for run code is already connected through usb
 ## Required reading order
 
 For every task, read only:
@@ -87,7 +89,7 @@ Assumptions:
 Risks:
 ```
 
-Do not modify files before producing this brief plan.
+Do not modify files before producing this brief plan and get confirmation from user.
 
 ## File budget
 
