@@ -1,3 +1,5 @@
+# Invariants
+
 These rules must never be violated.
 
 ## Content

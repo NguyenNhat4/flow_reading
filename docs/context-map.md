@@ -1,5 +1,3 @@
-# docs/context-map.md
-
 # Context Map
 
 Use this file to determine which documentation is relevant to the assigned task.
@@ -8,8 +6,8 @@ Do not read every linked document by default.
 
 ## Always read
 
-* `AGENTS.md`
-* The assigned file under `tasks/active/`
+- `AGENTS.md`
+- The assigned file under `tasks/active/`
 
 ## Read by task area
 
@@ -39,9 +37,9 @@ Contains the complete product requirements.
 
 Read it only when:
 
-* The task file references a specific requirement ID.
-* Acceptance criteria are ambiguous.
-* Product behavior must be clarified.
+- The task file references a specific requirement ID.
+- Acceptance criteria are ambiguous.
+- Product behavior must be clarified.
 
 Do not read it merely to implement a normal technical task.
 
@@ -57,13 +55,13 @@ Contains rules that must remain true across modules.
 
 Read for tasks involving:
 
-* Stable identifiers.
-* Reading position.
-* Pagination.
-* Annotations.
-* Translations.
-* AI references.
-* Synchronization.
+- Stable identifiers.
+- Reading position.
+- Pagination.
+- Annotations.
+- Translations.
+- AI references.
+- Synchronization.
 
 ### `docs/data-model.md`
 
