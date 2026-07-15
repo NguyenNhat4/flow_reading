@@ -31,6 +31,15 @@ The library UI depends on the picker and books-owned contracts. Platform wiring
 is created in `lib/app/flow_reading_app.dart`; widgets do not open databases or
 read files directly.
 
+On Android, `AndroidEpubPicker` opens the system document picker for a single
+file and reads the selected document into memory. The native chooser is left
+unfiltered because Android document providers do not consistently map EPUB
+extensions to MIME types; the platform adapter instead applies a
+case-insensitive `.epub` filename check before starting `BookImportService`.
+Cancelling the system picker returns `null`, so no import operation starts and
+the library remains unchanged. EPUB structure is still verified by
+`EpubValidator` as the first import stage.
+
 After a successful save, the library reloads immediately and presents the
 persisted cover, title, authors, reading progress, and last-opened time. Opening
 a book loads canonical chapters locally through `BookRepository`; reading state
