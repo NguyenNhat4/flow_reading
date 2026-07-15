@@ -107,7 +107,9 @@ class _LibraryScreenState extends State<_LibraryScreen> {
       widget.services.repository.listBooks();
 
   void _refresh() {
-    setState(() => _books = _loadBooks());
+    setState(() {
+      _books = _loadBooks();
+    });
   }
 
   Future<void> _importBook() async {
