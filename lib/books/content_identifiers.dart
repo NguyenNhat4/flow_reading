@@ -40,6 +40,10 @@ abstract final class ContentIdentifiers {
     return _fromParts('sentence', [blockId, startOffset, endOffset, text]);
   }
 
+  static String asset({required String bookId, required String sourceHref}) {
+    return _fromParts('asset', [bookId, _normalizeHref(sourceHref)]);
+  }
+
   static String textRange({
     required String bookId,
     required String chapterId,
