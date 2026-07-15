@@ -52,6 +52,8 @@ dependencies:
   xml: ^6.6.1
   # Tolerant HTML5 parsing for real-world EPUB chapter markup.
   html: ^0.15.6
+  # Bundled on-device language identification for imported book text.
+  google_mlkit_language_id: ^0.14.0
 
 dev_dependencies:
   flutter_test:

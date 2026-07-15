@@ -3,10 +3,12 @@ import 'dart:typed_data';
 
 import 'package:flow_reading/books/book_file_storage.dart';
 import 'package:flow_reading/books/book_import_service.dart';
+import 'package:flow_reading/books/book_language_detector.dart';
 import 'package:flow_reading/books/book_repository.dart';
 import 'package:flow_reading/platform/app_database.dart';
 import 'package:flow_reading/platform/epub_picker.dart';
 import 'package:flow_reading/platform/local_book_file_storage.dart';
+import 'package:flow_reading/platform/mlkit_book_language_detector.dart';
 import 'package:flow_reading/platform/sqlite_book_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -44,12 +46,16 @@ final class _LibraryServices {
     final database = AppDatabase();
     final repository = SqliteBookRepository(database);
     final storage = LocalBookFileStorage(supportDirectory);
+    final languageDetection = BookLanguageDetectionService(
+      MlKitBookLanguageDetector(),
+    );
     return _LibraryServices(
       repository: repository,
       storage: storage,
       importService: BookImportService(
         repository: repository,
         storage: storage,
+        languageDetection: languageDetection,
       ),
       picker: AndroidEpubPicker(),
     );
@@ -164,6 +170,42 @@ class _LibraryScreenState extends State<_LibraryScreen> {
     }
   }
 
+  Future<void> _changeLanguage(BookSummary book) async {
+    final controller = TextEditingController(text: book.detectedLanguage ?? '');
+    final language = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Book language'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'BCP-47 language code',
+            hintText: 'en, vi, fr, zh-Hant',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (language == null) return;
+    final normalized = BookLanguageDetectionService.normalize(language);
+    await widget.services.repository.updateDetectedLanguage(
+      book.id,
+      normalized,
+    );
+    if (mounted) _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,10 +248,25 @@ class _LibraryScreenState extends State<_LibraryScreen> {
                     if (book.detectedLanguage != null) book.detectedLanguage!,
                   ].join(' • '),
                 ),
-                trailing: IconButton(
-                  tooltip: 'Remove book',
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _deleteBook(book),
+                trailing: PopupMenuButton<_BookAction>(
+                  onSelected: (action) {
+                    switch (action) {
+                      case _BookAction.language:
+                        _changeLanguage(book);
+                      case _BookAction.delete:
+                        _deleteBook(book);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: _BookAction.language,
+                      child: Text('Set language'),
+                    ),
+                    PopupMenuItem(
+                      value: _BookAction.delete,
+                      child: Text('Remove book'),
+                    ),
+                  ],
                 ),
               );
             },
@@ -219,6 +276,8 @@ class _LibraryScreenState extends State<_LibraryScreen> {
     );
   }
 }
+
+enum _BookAction { language, delete }
 
 class _BookCover extends StatelessWidget {
   const _BookCover({required this.storage, required this.path});

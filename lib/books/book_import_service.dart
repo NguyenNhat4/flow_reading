@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flow_reading/books/book_file_storage.dart';
 import 'package:flow_reading/books/book_models.dart';
+import 'package:flow_reading/books/book_language_detector.dart';
 import 'package:flow_reading/books/book_repository.dart';
 import 'package:flow_reading/books/canonical_html_converter.dart';
 import 'package:flow_reading/books/content_identifiers.dart';
@@ -16,6 +17,7 @@ enum ImportStage {
   copyingBook('Copying book'),
   readingMetadata('Reading metadata'),
   parsingChapters('Parsing chapters'),
+  detectingLanguage('Detecting language'),
   extractingImages('Extracting images'),
   savingBook('Saving book'),
   complete('Complete');
@@ -43,10 +45,15 @@ final class ImportOperation {
 }
 
 final class BookImportService {
-  const BookImportService({required this.repository, required this.storage});
+  const BookImportService({
+    required this.repository,
+    required this.storage,
+    this.languageDetection,
+  });
 
   final BookRepository repository;
   final BookFileStorage storage;
+  final BookLanguageDetectionService? languageDetection;
 
   ImportOperation start(Uint8List bytes, String fileName) {
     final controller = _ImportController();
@@ -89,6 +96,13 @@ final class BookImportService {
       );
       controller.checkCancelled();
 
+      controller.emit(ImportStage.detectingLanguage);
+      final detectedLanguage = await languageDetection?.detect(
+        chapters: parsed.chapters,
+        declaredLanguage: parsed.metadata.language,
+      );
+      controller.checkCancelled();
+
       controller.emit(ImportStage.extractingImages);
       final assets = <BookAsset>[];
       for (final canonicalAsset in parsed.assets) {
@@ -119,7 +133,7 @@ final class BookImportService {
         chapters: parsed.chapters,
         tableOfContents: parsed.tableOfContents,
         assets: assets,
-        detectedLanguage: parsed.metadata.language,
+        detectedLanguage: detectedLanguage ?? parsed.metadata.language,
         importedAt: DateTime.now().toUtc(),
       );
 
