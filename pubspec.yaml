@@ -46,6 +46,8 @@ dependencies:
   http: ^1.6.0
   # Network-type observation; requests still handle connectivity failures.
   connectivity_plus: ^7.2.0
+  # Deterministic content-addressed IDs for canonical EPUB content.
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
