@@ -89,7 +89,7 @@ Assumptions:
 Risks:
 ```
 
-Do not modify files before producing this brief plan and get confirmation from user.
+Do not modify files before producing this brief plan.
 
 ## File budget
 
@@ -133,15 +133,6 @@ Run the complete test suite only when:
 * Public interfaces changed.
 * The task explicitly requires it.
 
-## Completion response
-
-At completion, report only:
-
-```text
-Implemented:
-Changed files:
-Validation:
-Remaining issues:
-```
+At the end of each task you've done, add/update revelant helpful contexts to files in /docs or create new one  in markdown format, you can organize them in a folder if needed and update context-map for references
 
 Do not create a separate completion document.
