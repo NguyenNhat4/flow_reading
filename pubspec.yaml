@@ -50,6 +50,8 @@ dependencies:
   crypto: ^3.0.7
   # Namespace-aware parsing for EPUB container and package documents.
   xml: ^6.6.1
+  # Tolerant HTML5 parsing for real-world EPUB chapter markup.
+  html: ^0.15.6
 
 dev_dependencies:
   flutter_test:

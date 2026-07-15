@@ -173,11 +173,41 @@ sealed class ContentBlock {
       'heading' => HeadingBlock.fromJson(json),
       'image' => ImageBlock.fromJson(json),
       'list' => ListBlock.fromJson(json),
+      'quote' => QuoteBlock.fromJson(json),
       final type => throw FormatException(
         'Unsupported content block type: $type',
       ),
     };
   }
+}
+
+class QuoteBlock extends ContentBlock {
+  const QuoteBlock({
+    required super.id,
+    required super.chapterId,
+    required super.order,
+    required this.spans,
+  });
+
+  final List<InlineTextSpan> spans;
+
+  String get text => spans.map((span) => span.text).join();
+
+  @override
+  String get type => 'quote';
+
+  @override
+  JsonMap toJson() => {
+    ...ContentBlock.baseJson(this),
+    'spans': spans.map((span) => span.toJson()).toList(),
+  };
+
+  factory QuoteBlock.fromJson(JsonMap json) => QuoteBlock(
+    id: json['id'] as String,
+    chapterId: json['chapterId'] as String,
+    order: json['order'] as int,
+    spans: _maps(json['spans']).map(InlineTextSpan.fromJson).toList(),
+  );
 }
 
 class ParagraphBlock extends ContentBlock {

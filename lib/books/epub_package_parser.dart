@@ -40,12 +40,14 @@ final class EpubAssetDraft {
 
 final class EpubImportDraft {
   const EpubImportDraft({
+    required this.bookId,
     required this.metadata,
     required this.chapters,
     required this.tableOfContents,
     this.cover,
   });
 
+  final String bookId;
   final BookMetadata metadata;
   final List<EpubChapterDraft> chapters;
   final List<TableOfContentsEntry> tableOfContents;
@@ -126,6 +128,7 @@ abstract final class EpubPackageParser {
       );
 
       return EpubImportDraft(
+        bookId: bookId,
         metadata: metadata,
         chapters: List.unmodifiable(chapters),
         tableOfContents: List.unmodifiable(tableOfContents),
