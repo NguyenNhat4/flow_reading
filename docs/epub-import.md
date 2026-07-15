@@ -45,7 +45,9 @@ persisted cover, title, authors, reading progress, and last-opened time. Opening
 a book loads canonical chapters locally through `BookRepository`; reading state
 is stored as a stable `ReadingLocator` in `reading_states`, never as a visual
 page number. Books without reading state display zero progress and have not yet
-been opened.
+been opened. The loaded summaries are searched in memory by title or author and
+can be sorted by title, author, recent activity, reading progress, or import
+date; these catalog operations require no network access.
 
 ## Validation
 

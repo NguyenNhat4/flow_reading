@@ -204,12 +204,12 @@ Finished or working now:
 - Local EPUB, image, and SQLite storage.
 - Library list with cover, title, author, progress, and last-opened time.
 - Confirmed full-book removal with staged filesystem rollback.
+- Offline library search and sorting.
 - Android file selection.
 - Basic local chapter reading and saved position.
 
 Partial or not started:
 
-- Library search and sorting are not started.
 - Proper reading pages are not started.
 - Highlights, notes, bookmarks, and reader settings are not started.
 - AI and translation are not started.

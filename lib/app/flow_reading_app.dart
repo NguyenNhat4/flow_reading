@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flow_reading/app/library_catalog.dart';
 import 'package:flow_reading/books/book_file_storage.dart';
 import 'package:flow_reading/books/book_import_service.dart';
 import 'package:flow_reading/books/book_language_detector.dart';
@@ -114,6 +115,8 @@ class _LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<_LibraryScreen> {
   late Future<List<BookSummary>> _books = _loadBooks();
+  String _query = '';
+  LibrarySort _sort = LibrarySort.recentActivity;
 
   Future<List<BookSummary>> _loadBooks() =>
       widget.services.repository.listBooks();
@@ -259,27 +262,84 @@ class _LibraryScreenState extends State<_LibraryScreen> {
               child: Text('Import an EPUB to start reading.'),
             );
           }
+          final visibleBooks = filterAndSortBooks(
+            books,
+            query: _query,
+            sort: _sort,
+          );
           return Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 760),
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
-                itemCount: books.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) => _BookCard(
-                  book: books[index],
-                  storage: widget.services.storage,
-                  onOpen: () => _openBook(books[index]),
-                  onAction: (action) {
-                    switch (action) {
-                      case _BookAction.language:
-                        _changeLanguage(books[index]);
-                      case _BookAction.delete:
-                        _deleteBook(books[index]);
-                    }
-                  },
-                ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                    child: TextField(
+                      onChanged: (value) => setState(() => _query = value),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Search by title or author',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        const Text('Sort by'),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButton<LibrarySort>(
+                            value: _sort,
+                            isExpanded: true,
+                            items: [
+                              for (final sort in LibrarySort.values)
+                                DropdownMenuItem(
+                                  value: sort,
+                                  child: Text(sort.label),
+                                ),
+                            ],
+                            onChanged: (sort) {
+                              if (sort != null) {
+                                setState(() => _sort = sort);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (visibleBooks.isEmpty)
+                    const Expanded(
+                      child: Center(child: Text('No books match your search.')),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
+                        itemCount: visibleBooks.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final book = visibleBooks[index];
+                          return _BookCard(
+                            book: book,
+                            storage: widget.services.storage,
+                            onOpen: () => _openBook(book),
+                            onAction: (action) {
+                              switch (action) {
+                                case _BookAction.language:
+                                  _changeLanguage(book);
+                                case _BookAction.delete:
+                                  _deleteBook(book);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
             ),
           );

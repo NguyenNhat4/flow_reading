@@ -59,6 +59,8 @@ Remove the selected local book and all data owned by it:
 
 ## TASK-204 — Add library search and sorting
 
+**Status:** Complete
+
 **Priority:** P2
 
 Support searching and sorting by:
