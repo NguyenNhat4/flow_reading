@@ -77,6 +77,12 @@ block, and UTF-16 offset. After repagination, the reader finds the page that
 contains that anchor. The visible page number may change while the logical
 passage remains the same.
 
+The layout sheet edits font size, line spacing, and horizontal and vertical
+margins as one draft. Applying the draft first persists the current locator,
+then saves the device-global settings and triggers repagination. Viewport
+rotation follows the same locator-first restoration path. A failed settings
+write leaves the previous layout active.
+
 ## Fixes to avoid
 
 - Do not hide the stripe with `ClipRect`; clipping can silently remove text.

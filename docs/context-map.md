@@ -14,6 +14,10 @@ Do not read every linked document by default.
 | Task area                   | Read                                                                 | Main code location                 |
 | --------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
 | Project orientation and progress | `docs/project-architecture-guide.md`                           | All approved modules               |
+| Dart and Flutter code conventions | `docs/flutter-guidelines/code-style.md`                       | All approved modules               |
+| Application patterns, state, routing, serialization, logging, and code generation | `docs/flutter-guidelines/application-patterns.md` | `lib/app/`, feature modules |
+| Testing and API documentation | `docs/flutter-guidelines/testing-and-documentation.md`             | `test/`, affected production module |
+| UI, theming, layout, assets, typography, and accessibility | `docs/flutter-guidelines/ui-and-accessibility.md` | Widget and theme files |
 | EPUB validation             | Validation section of `docs/epub-import.md`                         | `lib/books/epub_validator.dart`    |
 | Original EPUB storage       | Storage lifecycle section of `docs/epub-import.md`                  | `lib/books/`, `lib/platform/`      |
 | Metadata, spine, and TOC    | Package parsing section of `docs/epub-import.md`, `docs/data-model.md` | `lib/books/`                     |
@@ -39,6 +43,23 @@ Do not read every linked document by default.
 | Product clarification       | Relevant requirement inside `docs/product-plan.md`                   | Varies                             |
 
 ## Documentation roles
+
+### `docs/flutter-guidelines/`
+
+Contains generic Flutter and Dart implementation guidance. Read only the file
+matching the task:
+
+- `code-style.md` for language usage, code quality, dependencies, API design,
+  widget composition, or lint configuration.
+- `application-patterns.md` for application structure, state management,
+  dependency injection, routing, serialization, logging, or code generation.
+- `testing-and-documentation.md` when adding tests or documenting APIs.
+- `ui-and-accessibility.md` for visual design, themes, assets, responsive
+  layouts, typography, or accessibility.
+
+These guides are generic defaults. Project-specific module boundaries,
+invariants, task acceptance criteria, and existing architectural decisions take
+precedence.
 
 ### `docs/product-plan.md`
 
@@ -97,7 +118,8 @@ When information conflicts, use this order:
 4. `docs/epub-import.md`.
 5. `docs/data-model.md`.
 6. `docs/product-plan.md`.
-7. Existing implementation.
+7. Relevant file under `docs/flutter-guidelines/`.
+8. Existing implementation.
 
 Do not silently resolve meaningful conflicts. Report them before implementation.
 
