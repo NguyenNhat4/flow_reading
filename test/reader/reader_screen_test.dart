@@ -80,6 +80,22 @@ void main() {
     );
   });
 
+  test('passage selection preserves an adjusted canonical range', () {
+    const text = 'First sentence. Second sentence.';
+    final passage = passageSelectionForRange(
+      bookId: 'book-id',
+      chapterId: 'chapter-id',
+      blockId: 'block-id',
+      sourceText: text,
+      startOffset: 6,
+      endOffset: 31,
+    );
+
+    expect(passage?.textSnapshot, 'sentence. Second sentence');
+    expect(passage?.anchor.startOffset, 6);
+    expect(passage?.anchor.endOffset, 31);
+  });
+
   test('pagination v2 reserves render slack and keeps anchors contiguous', () {
     final previous = ReaderLayout(
       settings: ReaderSettings(
@@ -206,6 +222,60 @@ void main() {
     expect(_hasPaintedBackground(selectedText.text), isTrue);
     expect(
       find.bySemanticsLabel(RegExp(r'Selected word: Read')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('long press creates an adjustable stable passage range', (
+    tester,
+  ) async {
+    PassageSelection? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 500,
+          height: 400,
+          child: SwipeableReader(
+            chapters: const [_passageChapter],
+            settings: ReaderSettings.defaults,
+            onPositionChanged: (_) {},
+            onPassageSelected: (selection) => selected = selection,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final renderedText = find.text(
+      'First sentence. Second sentence remains selectable.',
+      findRichText: true,
+    );
+    await tester.longPressAt(
+      tester.getTopLeft(renderedText) + const Offset(20, 12),
+    );
+    await tester.pump();
+
+    expect(selected?.textSnapshot, 'First');
+    expect(selected?.anchor.bookId, 'book-id');
+    expect(selected?.anchor.chapterId, 'passage-chapter');
+    expect(selected?.anchor.blockId, 'passage-block');
+
+    await tester.drag(
+      find.byKey(const ValueKey('reader-passage-end-handle')),
+      const Offset(250, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(selected?.textSnapshot, startsWith('First'));
+    expect(selected!.textSnapshot.length, greaterThan('First'.length));
+    expect(selected?.anchor.startOffset, 0);
+    expect(selected?.anchor.endOffset, greaterThan(5));
+    expect(
+      find.byKey(const ValueKey('reader-selected-passage')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'Selected passage: First sentence')),
       findsOneWidget,
     );
   });
@@ -751,6 +821,25 @@ Chapter _chapterWithText(
       chapterId: chapterId,
       order: 0,
       spans: [InlineTextSpan(text: text)],
+    ),
+  ],
+);
+
+const _passageChapter = Chapter(
+  id: 'passage-chapter',
+  bookId: 'book-id',
+  title: 'Passage chapter',
+  order: 0,
+  blocks: [
+    ParagraphBlock(
+      id: 'passage-block',
+      chapterId: 'passage-chapter',
+      order: 0,
+      spans: [
+        InlineTextSpan(
+          text: 'First sentence. Second sentence remains selectable.',
+        ),
+      ],
     ),
   ],
 );

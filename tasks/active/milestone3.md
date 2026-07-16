@@ -160,6 +160,8 @@ Allow users to tap a word.
 
 ## TASK-309 — Implement passage selection
 
+**Status:** Complete
+
 **Priority:** P1
 
 Allow long-press selection of a sentence or passage.

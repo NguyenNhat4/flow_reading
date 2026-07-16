@@ -8,7 +8,6 @@ import 'package:flow_reading/reader/pagination_engine.dart';
 import 'package:flow_reading/reader/reader_selection.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 class SwipeableReader extends StatefulWidget {
   const SwipeableReader({
@@ -17,6 +16,7 @@ class SwipeableReader extends StatefulWidget {
     required this.onPositionChanged,
     this.initialLocator,
     this.onWordSelected,
+    this.onPassageSelected,
     super.key,
   });
 
@@ -27,6 +27,9 @@ class SwipeableReader extends StatefulWidget {
 
   /// Receives a stable range whenever the reader selects a word.
   final ValueChanged<WordSelection>? onWordSelected;
+
+  /// Receives a stable range whenever reader handles adjust a passage.
+  final ValueChanged<PassageSelection>? onPassageSelected;
 
   @override
   State<SwipeableReader> createState() => _SwipeableReaderState();
@@ -44,6 +47,7 @@ class _SwipeableReaderState extends State<SwipeableReader> {
   int _currentPage = 0;
   int _generation = 0;
   WordSelection? _wordSelection;
+  PassageSelection? _passageSelection;
 
   @override
   void didUpdateWidget(covariant SwipeableReader oldWidget) {
@@ -118,7 +122,9 @@ class _SwipeableReaderState extends State<SwipeableReader> {
                   layout: layout,
                   measurer: _measurer,
                   wordSelection: _wordSelection,
+                  passageSelection: _passageSelection,
                   onWordSelected: _selectWord,
+                  onPassageSelected: _selectPassage,
                 ),
               );
             },
@@ -220,13 +226,25 @@ class _SwipeableReaderState extends State<SwipeableReader> {
     setState(() {
       _currentPage = index;
       _wordSelection = null;
+      _passageSelection = null;
     });
     widget.onPositionChanged(pages[index].boundary.start);
   }
 
   void _selectWord(WordSelection? selection) {
-    setState(() => _wordSelection = selection);
+    setState(() {
+      _wordSelection = selection;
+      _passageSelection = null;
+    });
     if (selection != null) widget.onWordSelected?.call(selection);
+  }
+
+  void _selectPassage(PassageSelection selection) {
+    setState(() {
+      _wordSelection = null;
+      _passageSelection = selection;
+    });
+    widget.onPassageSelected?.call(selection);
   }
 
   static int _pageForLocator(List<_BookPage> pages, ReadingLocator? locator) {
@@ -307,7 +325,9 @@ class _ReaderPageContent extends StatelessWidget {
     required this.layout,
     required this.measurer,
     required this.wordSelection,
+    required this.passageSelection,
     required this.onWordSelected,
+    required this.onPassageSelected,
     super.key,
   });
 
@@ -315,7 +335,9 @@ class _ReaderPageContent extends StatelessWidget {
   final ReaderLayout layout;
   final FlutterContentMeasurer measurer;
   final WordSelection? wordSelection;
+  final PassageSelection? passageSelection;
   final ValueChanged<WordSelection?> onWordSelected;
+  final ValueChanged<PassageSelection> onPassageSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -350,7 +372,9 @@ class _ReaderPageContent extends StatelessWidget {
           layout: layout,
           measurer: measurer,
           wordSelection: wordSelection,
+          passageSelection: passageSelection,
           onWordSelected: onWordSelected,
+          onPassageSelected: onPassageSelected,
         ),
       );
     }
@@ -390,7 +414,9 @@ class _BlockFragment extends StatelessWidget {
     required this.layout,
     required this.measurer,
     required this.wordSelection,
+    required this.passageSelection,
     required this.onWordSelected,
+    required this.onPassageSelected,
   });
 
   final String bookId;
@@ -400,7 +426,9 @@ class _BlockFragment extends StatelessWidget {
   final ReaderLayout layout;
   final FlutterContentMeasurer measurer;
   final WordSelection? wordSelection;
+  final PassageSelection? passageSelection;
   final ValueChanged<WordSelection?> onWordSelected;
+  final ValueChanged<PassageSelection> onPassageSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +453,7 @@ class _BlockFragment extends StatelessWidget {
       );
     }
 
-    final selectedAnchor = wordSelection?.anchor;
+    final selectedAnchor = passageSelection?.anchor ?? wordSelection?.anchor;
     final selectsBlock =
         selectedAnchor != null &&
         selectedAnchor.bookId == bookId &&
@@ -445,7 +473,15 @@ class _BlockFragment extends StatelessWidget {
         selectedAnchor.startOffset < endOffset &&
         selectedAnchor.endOffset > startOffset;
     final text = _TappableTextFragment(
-      selectedWord: selectedHere ? wordSelection?.textSnapshot : null,
+      selectedWord: selectedHere && passageSelection == null
+          ? wordSelection?.textSnapshot
+          : null,
+      selectedPassage:
+          passageSelection?.anchor.bookId == bookId &&
+              passageSelection?.anchor.chapterId == block.chapterId &&
+              passageSelection?.anchor.blockId == block.id
+          ? passageSelection?.textSnapshot
+          : null,
       text: TextSpan(
         style: TextStyle(color: DefaultTextStyle.of(context).style.color),
         children: [span],
@@ -473,6 +509,50 @@ class _BlockFragment extends StatelessWidget {
           ),
         );
       },
+      onDisplaySelectionChanged: (selection) {
+        int? sourceStart;
+        for (
+          var displayOffset = selection.start;
+          displayOffset < selection.end;
+          displayOffset++
+        ) {
+          sourceStart = measurer.sourceOffsetForDisplayPosition(
+            block: block,
+            settings: layout.settings,
+            startOffset: startOffset,
+            endOffset: endOffset,
+            displayOffset: displayOffset,
+          );
+          if (sourceStart != null) break;
+        }
+        int? sourceEnd;
+        for (
+          var displayOffset = selection.end - 1;
+          displayOffset >= selection.start;
+          displayOffset--
+        ) {
+          final sourceOffset = measurer.sourceOffsetForDisplayPosition(
+            block: block,
+            settings: layout.settings,
+            startOffset: startOffset,
+            endOffset: endOffset,
+            displayOffset: displayOffset,
+          );
+          if (sourceOffset == null) continue;
+          sourceEnd = sourceOffset + 1;
+          break;
+        }
+        if (sourceStart == null || sourceEnd == null) return;
+        final passage = passageSelectionForRange(
+          bookId: bookId,
+          chapterId: block.chapterId,
+          blockId: block.id,
+          sourceText: measurer.sourceText(block, layout.settings),
+          startOffset: sourceStart,
+          endOffset: sourceEnd,
+        );
+        if (passage != null) onPassageSelected(passage);
+      },
     );
     if (block is QuoteBlock) {
       return DecoratedBox(
@@ -498,13 +578,17 @@ class _TappableTextFragment extends StatefulWidget {
     required this.text,
     required this.textScale,
     required this.onTapDisplayOffset,
+    required this.onDisplaySelectionChanged,
     this.selectedWord,
+    this.selectedPassage,
   });
 
   final TextSpan text;
   final double textScale;
   final ValueChanged<int> onTapDisplayOffset;
+  final ValueChanged<TextSelection> onDisplaySelectionChanged;
   final String? selectedWord;
+  final String? selectedPassage;
 
   @override
   State<_TappableTextFragment> createState() => _TappableTextFragmentState();
@@ -512,34 +596,207 @@ class _TappableTextFragment extends StatefulWidget {
 
 class _TappableTextFragmentState extends State<_TappableTextFragment> {
   final _textKey = GlobalKey();
+  int? _lastPointerDisplayOffset;
+  TextSelection? _pendingLongPressSelection;
 
   @override
   Widget build(BuildContext context) {
+    final selectedLabel = widget.selectedPassage == null
+        ? widget.selectedWord == null
+              ? null
+              : 'Selected word: ${widget.selectedWord}'
+        : 'Selected passage: ${widget.selectedPassage}';
+    final passageSelection = _displaySelectionFor(widget.selectedPassage);
     return Semantics(
-      selected: widget.selectedWord != null,
-      label: widget.selectedWord == null
-          ? null
-          : 'Selected word: ${widget.selectedWord}',
+      selected: selectedLabel != null,
+      label: selectedLabel,
       child: GestureDetector(
-        key: widget.selectedWord == null
-            ? null
-            : const ValueKey('reader-selected-word'),
+        key: widget.selectedPassage != null
+            ? const ValueKey('reader-selected-passage')
+            : widget.selectedWord != null
+            ? const ValueKey('reader-selected-word')
+            : null,
         behavior: HitTestBehavior.translucent,
         onTapDown: (details) {
-          final paragraph = _textKey.currentContext?.findRenderObject();
-          if (paragraph is! RenderParagraph) return;
-          final position = paragraph.getPositionForOffset(
-            details.localPosition,
+          final size = context.size;
+          if (size == null || size.width <= 0) return;
+          final position = _displayPosition(details.localPosition, size.width);
+          _lastPointerDisplayOffset = position.offset;
+          final range = wordRangeAt(
+            widget.text.toPlainText(),
+            position.offset.clamp(0, widget.text.toPlainText().length - 1),
           );
+          _pendingLongPressSelection = range == null
+              ? null
+              : TextSelection(
+                  baseOffset: range.startOffset,
+                  extentOffset: range.endOffset,
+                );
           widget.onTapDisplayOffset(position.offset);
         },
-        child: RichText(
-          key: _textKey,
-          text: widget.text,
-          textDirection: TextDirection.ltr,
-          textScaler: TextScaler.linear(widget.textScale),
+        onLongPressStart: (_) {
+          final selection = _pendingLongPressSelection;
+          if (selection != null) {
+            widget.onDisplaySelectionChanged(selection);
+          }
+        },
+        child: LayoutBuilder(
+          builder: (context, constraints) => Stack(
+            clipBehavior: Clip.none,
+            children: [
+              RichText(
+                key: _textKey,
+                text: widget.text,
+                textDirection: TextDirection.ltr,
+                textScaler: TextScaler.linear(widget.textScale),
+              ),
+              if (passageSelection != null)
+                ..._selectionHandles(passageSelection, constraints.maxWidth),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  TextPosition _displayPosition(Offset localPosition, double maxWidth) {
+    final painter = TextPainter(
+      text: widget.text,
+      textDirection: TextDirection.ltr,
+      textScaler: TextScaler.linear(widget.textScale),
+    )..layout(maxWidth: maxWidth);
+    final position = painter.getPositionForOffset(localPosition);
+    painter.dispose();
+    return position;
+  }
+
+  List<Widget> _selectionHandles(TextSelection selection, double maxWidth) {
+    final painter = TextPainter(
+      text: widget.text,
+      textDirection: TextDirection.ltr,
+      textScaler: TextScaler.linear(widget.textScale),
+    )..layout(maxWidth: maxWidth);
+    final boxes = painter.getBoxesForSelection(selection);
+    painter.dispose();
+    if (boxes.isEmpty) return const [];
+    final start = boxes.first;
+    final end = boxes.last;
+    return [
+      Positioned(
+        left: start.left - 16,
+        top: start.bottom - 4,
+        child: _SelectionHandle(
+          key: const ValueKey('reader-passage-start-handle'),
+          onDrag: (globalPosition) =>
+              _moveHandle(globalPosition, selection, maxWidth, moveStart: true),
+        ),
+      ),
+      Positioned(
+        left: end.right - 16,
+        top: end.bottom - 4,
+        child: _SelectionHandle(
+          key: const ValueKey('reader-passage-end-handle'),
+          onDrag: (globalPosition) => _moveHandle(
+            globalPosition,
+            selection,
+            maxWidth,
+            moveStart: false,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  void _moveHandle(
+    Offset globalPosition,
+    TextSelection selection,
+    double maxWidth, {
+    required bool moveStart,
+  }) {
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox) return;
+    final position = _displayPosition(
+      renderObject.globalToLocal(globalPosition),
+      maxWidth,
+    ).offset;
+    final updated = moveStart
+        ? TextSelection(
+            baseOffset: position.clamp(0, selection.end - 1),
+            extentOffset: selection.end,
+          )
+        : TextSelection(
+            baseOffset: selection.start,
+            extentOffset: position.clamp(
+              selection.start + 1,
+              widget.text.toPlainText().length,
+            ),
+          );
+    widget.onDisplaySelectionChanged(updated);
+  }
+
+  TextSelection? _displaySelectionFor(String? selectedText) {
+    if (selectedText == null || selectedText.isEmpty) return null;
+    final displayText = widget.text.toPlainText();
+    final candidates = <int>[];
+    var searchStart = 0;
+    while (searchStart <= displayText.length - selectedText.length) {
+      final index = displayText.indexOf(selectedText, searchStart);
+      if (index < 0) break;
+      candidates.add(index);
+      searchStart = index + 1;
+    }
+    if (candidates.isEmpty) return null;
+    final hint = _lastPointerDisplayOffset;
+    var best = candidates.first;
+    if (hint != null) {
+      var bestDistance = _selectionDistance(best, selectedText.length, hint);
+      for (final candidate in candidates.skip(1)) {
+        final distance = _selectionDistance(
+          candidate,
+          selectedText.length,
+          hint,
+        );
+        if (distance < bestDistance) {
+          best = candidate;
+          bestDistance = distance;
+        }
+      }
+    }
+    return TextSelection(
+      baseOffset: best,
+      extentOffset: best + selectedText.length,
+    );
+  }
+}
+
+class _SelectionHandle extends StatelessWidget {
+  const _SelectionHandle({required this.onDrag, super.key});
+
+  final ValueChanged<Offset> onDrag;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanUpdate: (details) => onDrag(details.globalPosition),
+      child: SizedBox.square(
+        dimension: 32,
+        child: Center(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: const SizedBox.square(dimension: 14),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+int _selectionDistance(int start, int length, int hint) {
+  final end = start + length;
+  if (hint >= start && hint <= end) return 0;
+  return hint < start ? start - hint : hint - end;
 }

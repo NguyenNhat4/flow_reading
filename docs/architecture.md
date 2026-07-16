@@ -248,6 +248,14 @@ boundaries produce a stable `WordSelection` in one canonical block. The reader
 holds one paint-only highlight at a time; its background does not change text
 metrics or page boundaries.
 
+Passage selection uses reader-scoped long-press selection and adjustable
+handles on the same rich-text fragment. This keeps ordinary horizontal drags
+available to page navigation. Every adjusted display range is mapped
+inward past display-only decorations and emitted as a half-open
+`PassageSelection` for one canonical block, so it can cross sentence boundaries
+without depending on its temporary page. Cross-block ranges are not represented
+because stable range models intentionally identify one block.
+
 ## Implementation order
 
 ```text

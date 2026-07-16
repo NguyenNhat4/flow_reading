@@ -13,20 +13,53 @@ WordSelection? wordSelectionAt({
   required String sourceText,
   required int sourceOffset,
 }) {
-  if (sourceOffset < 0 || sourceOffset >= sourceText.length) return null;
-  for (final match in _wordPattern.allMatches(sourceText)) {
-    if (sourceOffset < match.start) return null;
-    if (sourceOffset >= match.end) continue;
-    return WordSelection(
-      anchor: TextAnchor(
-        bookId: bookId,
-        chapterId: chapterId,
-        blockId: blockId,
-        startOffset: match.start,
-        endOffset: match.end,
-      ),
-      textSnapshot: match.group(0)!,
-    );
+  final range = wordRangeAt(sourceText, sourceOffset);
+  if (range == null) return null;
+  return WordSelection(
+    anchor: TextAnchor(
+      bookId: bookId,
+      chapterId: chapterId,
+      blockId: blockId,
+      startOffset: range.startOffset,
+      endOffset: range.endOffset,
+    ),
+    textSnapshot: sourceText.substring(range.startOffset, range.endOffset),
+  );
+}
+
+/// Returns the Unicode-aware word range containing [offset].
+({int startOffset, int endOffset})? wordRangeAt(String text, int offset) {
+  if (offset < 0 || offset >= text.length) return null;
+  for (final match in _wordPattern.allMatches(text)) {
+    if (offset < match.start) return null;
+    if (offset >= match.end) continue;
+    return (startOffset: match.start, endOffset: match.end);
   }
   return null;
+}
+
+/// Creates a stable passage from an adjusted canonical half-open range.
+PassageSelection? passageSelectionForRange({
+  required String bookId,
+  required String chapterId,
+  required String blockId,
+  required String sourceText,
+  required int startOffset,
+  required int endOffset,
+}) {
+  if (startOffset < 0 ||
+      endOffset <= startOffset ||
+      endOffset > sourceText.length) {
+    return null;
+  }
+  return PassageSelection(
+    anchor: TextAnchor(
+      bookId: bookId,
+      chapterId: chapterId,
+      blockId: blockId,
+      startOffset: startOffset,
+      endOffset: endOffset,
+    ),
+    textSnapshot: sourceText.substring(startOffset, endOffset),
+  );
 }
