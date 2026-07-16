@@ -43,17 +43,21 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('“Read”'), findsOneWidget);
-    expect(find.text('Meaning here'), findsOneWidget);
-    expect(find.text('to understand written words'), findsOneWidget);
-    expect(find.text('Part of speech'), findsOneWidget);
-    expect(find.text('verb'), findsOneWidget);
-    expect(find.text('Why this word'), findsOneWidget);
-    expect(find.text('It names the exact reading action.'), findsOneWidget);
-    expect(find.text('Simpler wording'), findsOneWidget);
-    expect(find.text('Look at and understand the text.'), findsOneWidget);
+    expect(find.text('Mô tả từ'), findsOneWidget);
+    expect(
+      find.text('Động từ mô tả hành động đọc và hiểu chữ viết.'),
+      findsOneWidget,
+    );
+    expect(find.text('Nghĩa trong ngữ cảnh'), findsOneWidget);
+    expect(
+      find.text('Trong câu này, “Read” có nghĩa là đọc nội dung.'),
+      findsOneWidget,
+    );
+    expect(find.text('Ví dụ'), findsOneWidget);
     expect(find.text('• Read this chapter.'), findsOneWidget);
     expect(find.text('• I read before bed.'), findsOneWidget);
-    expect(find.text('Possible ambiguity'), findsOneWidget);
+    expect(find.text('Meaning here'), findsNothing);
+    expect(find.text('Part of speech'), findsNothing);
   });
 }
 
@@ -96,12 +100,9 @@ final class _Provider implements AiProvider {
     required AiProviderRequest request,
   }) async => AiCompletion(
     text: jsonEncode({
-      'contextualMeaning': 'to understand written words',
-      'partOfSpeech': 'verb',
-      'reasonUsed': 'It names the exact reading action.',
-      'simplerParaphrase': 'Look at and understand the text.',
+      'description': 'Động từ mô tả hành động đọc và hiểu chữ viết.',
+      'contextualMeaning': 'Trong câu này, “Read” có nghĩa là đọc nội dung.',
       'examples': ['Read this chapter.', 'I read before bed.'],
-      'ambiguityWarning': 'It can also describe an interpretation.',
     }),
     providerId: id,
     model: request.model,

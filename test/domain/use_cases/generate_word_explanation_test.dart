@@ -33,7 +33,14 @@ void main() {
       );
 
       expect(result.fromCache, isFalse);
-      expect(result.explanation.contextualMeaning, 'to consume written text');
+      expect(
+        result.explanation.description,
+        'Động từ chỉ hành động đọc chữ viết.',
+      );
+      expect(
+        result.explanation.contextualMeaning,
+        'Trong câu này, từ này có nghĩa là đọc nội dung.',
+      );
       expect(result.explanation.examples, hasLength(2));
       expect(artifacts.saved, hasLength(1));
       final requestInput = (jsonDecode(provider.requests.single.input) as Map)
@@ -144,12 +151,9 @@ GenerateWordExplanationUseCase _useCase({
 );
 
 const _response = <String, Object?>{
-  'contextualMeaning': 'to consume written text',
-  'partOfSpeech': 'verb',
-  'reasonUsed': 'It directly describes the reader action.',
-  'simplerParaphrase': 'Look at and understand the words.',
+  'description': 'Động từ chỉ hành động đọc chữ viết.',
+  'contextualMeaning': 'Trong câu này, từ này có nghĩa là đọc nội dung.',
   'examples': ['Read the next page.', 'She reads every evening.'],
-  'ambiguityWarning': null,
 };
 
 final class _Artifacts implements AiArtifactRepository {

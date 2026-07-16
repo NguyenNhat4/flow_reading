@@ -294,14 +294,15 @@ separation and explicit uncertainty.
 
 ### Word explanation
 
-`WordExplanation` is a structured result containing the contextual meaning,
-part of speech, reason the word is used, a simpler paraphrase, at least two
-examples, and an optional ambiguity warning. `GenerateWordExplanationUseCase`
-builds context from the stable word range and its containing sentence, checks
-the compatible artifact cache before reading a credential, and stores only a
-successfully parsed response. The reader displays the result in a modal sheet,
-so opening or closing it does not navigate away from the book or change the
-logical reading position.
+`WordExplanation` is a structured result containing a Vietnamese word
+description, a Vietnamese explanation of its meaning in the selected context,
+and at least two English examples. Prompt version 2 enforces these output
+languages and replaces the earlier, broader English response shape.
+`GenerateWordExplanationUseCase` builds context from the stable word range and
+its containing sentence, checks the compatible artifact cache before reading a
+credential, and stores only a successfully parsed response. The reader displays
+the result in a modal sheet, so opening or closing it does not navigate away
+from the book or change the logical reading position.
 
 AI settings expose provider and model metadata but never read a stored key back
 into the UI. A new key is validated before it replaces the securely stored key.

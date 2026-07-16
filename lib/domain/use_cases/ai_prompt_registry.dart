@@ -6,19 +6,21 @@ abstract final class AiPromptRegistry {
   static final Map<AiRequestType, AiPromptTemplate> _templates = {
     AiRequestType.wordExplanation: AiPromptTemplate(
       id: 'word_explanation',
-      version: 1,
+      version: 2,
       requestType: AiRequestType.wordExplanation,
       instructions:
           '$_groundingRules\n'
-          'Explain the selected word as it is used in the containing sentence. '
-          'Give its contextual meaning and part of speech, why the author used '
-          'it here, a simpler paraphrase, and at least two natural examples. '
-          'If more than one meaning is plausible, state that ambiguity.',
+          'Explain the selected English word for a Vietnamese reader. '
+          'Write description and contextualMeaning entirely in natural, clear '
+          'Vietnamese. The description should briefly describe the word and '
+          'may include its part of speech when useful. Explain the meaning in '
+          'the supplied containing sentence under contextualMeaning. Provide '
+          'at least two short, natural examples written in English only.',
       responseFormat: AiJsonResponseFormat(
         name: 'word_explanation',
         schema: _wordSchema,
       ),
-      maxOutputTokens: 900,
+      maxOutputTokens: 650,
     ),
     AiRequestType.passageExplanation: AiPromptTemplate(
       id: 'passage_explanation',
@@ -137,25 +139,15 @@ const _stringArray = <String, Object?>{
 const _wordSchema = <String, Object?>{
   'type': 'object',
   'properties': {
+    'description': {'type': 'string'},
     'contextualMeaning': {'type': 'string'},
-    'partOfSpeech': {'type': 'string'},
-    'reasonUsed': {'type': 'string'},
-    'simplerParaphrase': {'type': 'string'},
     'examples': {
       'type': 'array',
       'items': {'type': 'string'},
       'minItems': 2,
     },
-    'ambiguityWarning': _nullableString,
   },
-  'required': [
-    'contextualMeaning',
-    'partOfSpeech',
-    'reasonUsed',
-    'simplerParaphrase',
-    'examples',
-    'ambiguityWarning',
-  ],
+  'required': ['description', 'contextualMeaning', 'examples'],
   'additionalProperties': false,
 };
 

@@ -47,7 +47,7 @@ class _WordExplanationSheetState extends State<WordExplanationSheet> {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Close explanation',
+                        tooltip: 'Đóng phần giải nghĩa',
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close),
                       ),
@@ -57,7 +57,7 @@ class _WordExplanationSheetState extends State<WordExplanationSheet> {
                     const SizedBox(height: 24),
                     const Center(child: CircularProgressIndicator()),
                     const SizedBox(height: 12),
-                    const Center(child: Text('Reading the selected sentence…')),
+                    const Center(child: Text('Đang đọc câu chứa từ…')),
                   ] else if (viewModel.errorMessage case final error?) ...[
                     const SizedBox(height: 16),
                     Text(error, key: const ValueKey('word-explanation-error')),
@@ -67,28 +67,20 @@ class _WordExplanationSheetState extends State<WordExplanationSheet> {
                         alignment: Alignment.centerLeft,
                         child: Chip(
                           avatar: Icon(Icons.offline_bolt_outlined, size: 18),
-                          label: Text('Saved result'),
+                          label: Text('Kết quả đã lưu'),
                         ),
                       ),
                     _ExplanationSection(
-                      title: 'Meaning here',
+                      title: 'Mô tả từ',
+                      body: explanation.description,
+                    ),
+                    _ExplanationSection(
+                      title: 'Nghĩa trong ngữ cảnh',
                       body: explanation.contextualMeaning,
-                    ),
-                    _ExplanationSection(
-                      title: 'Part of speech',
-                      body: explanation.partOfSpeech,
-                    ),
-                    _ExplanationSection(
-                      title: 'Why this word',
-                      body: explanation.reasonUsed,
-                    ),
-                    _ExplanationSection(
-                      title: 'Simpler wording',
-                      body: explanation.simplerParaphrase,
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Examples',
+                      'Ví dụ',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
@@ -97,16 +89,6 @@ class _WordExplanationSheetState extends State<WordExplanationSheet> {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text('• $example'),
                       ),
-                    if (explanation.ambiguityWarning case final warning?) ...[
-                      const SizedBox(height: 16),
-                      Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.info_outline),
-                          title: const Text('Possible ambiguity'),
-                          subtitle: Text(warning),
-                        ),
-                      ),
-                    ],
                   ],
                 ],
               ),

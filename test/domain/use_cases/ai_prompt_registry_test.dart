@@ -17,7 +17,19 @@ void main() {
         ...AiRequestType.values,
       });
       expect(templates.map((template) => template.id).toSet(), hasLength(7));
-      expect(templates.map((template) => template.version), everyElement(1));
+      expect(
+        AiPromptRegistry.templateFor(AiRequestType.wordExplanation).version,
+        2,
+      );
+      expect(
+        templates
+            .where(
+              (template) =>
+                  template.requestType != AiRequestType.wordExplanation,
+            )
+            .map((template) => template.version),
+        everyElement(1),
+      );
     });
 
     test('every prompt grounds facts, interpretations, and uncertainty', () {
@@ -50,7 +62,13 @@ void main() {
       final properties = (word.schema['properties'] as Map)
           .cast<String, Object?>();
       final examples = (properties['examples'] as Map).cast<String, Object?>();
+      expect(properties.keys, {'description', 'contextualMeaning', 'examples'});
       expect(examples['minItems'], 2);
+      final instructions = AiPromptRegistry.templateFor(
+        AiRequestType.wordExplanation,
+      ).instructions;
+      expect(instructions, contains('entirely in natural, clear Vietnamese'));
+      expect(instructions, contains('written in English only'));
     });
 
     test('renders stable anchors and prompt metadata without page fields', () {
@@ -69,7 +87,7 @@ void main() {
 
       expect(request.model, 'reader-model');
       expect(input['promptId'], template.id);
-      expect(input['promptVersion'], 1);
+      expect(input['promptVersion'], 2);
       expect(anchor['bookId'], 'book');
       expect(anchor['chapterId'], 'chapter');
       expect(anchor['blockId'], 'block');
