@@ -11,6 +11,9 @@ void main() {
       CredentialStorageFailure(),
       NetworkFailure(),
       InvalidApiKeyFailure(),
+      AiRateLimitFailure(),
+      AiQuotaFailure(),
+      AiRequestCancelledFailure(),
       AiProviderFailure(),
     ];
 

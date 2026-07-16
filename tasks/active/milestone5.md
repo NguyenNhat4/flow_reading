@@ -18,6 +18,8 @@
 
 ## TASK-502 — Define AI provider interface
 
+**Status:** Complete
+
 **Priority:** P1
 
 Create one common interface for:

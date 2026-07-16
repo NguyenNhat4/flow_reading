@@ -261,6 +261,14 @@ The Android implementation uses `flutter_secure_storage` with an isolated
 namespace and Android KeyStore-backed encryption. Keys are not part of the
 SQLite schema, exported book data, logs, or application error messages.
 
+### AI provider boundary
+
+`AiProvider` is the provider-independent domain port for key validation,
+completion, and cancellable streaming. `AiProviderRequest` contains rendered
+instructions, input, model selection, and an optional JSON schema, but never a
+credential. Provider implementations map raw transport and service errors to
+shared `AppFailure` types before returning control to application or UI code.
+
 ### AI conversation
 
 `AiConversation`

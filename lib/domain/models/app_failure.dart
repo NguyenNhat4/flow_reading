@@ -59,6 +59,27 @@ final class InvalidApiKeyFailure extends AppFailure {
   });
 }
 
+final class AiRateLimitFailure extends AppFailure {
+  const AiRateLimitFailure({
+    this.retryAfter,
+    super.message = 'The AI provider rate limit was reached. Try again later.',
+  });
+
+  final Duration? retryAfter;
+}
+
+final class AiQuotaFailure extends AppFailure {
+  const AiQuotaFailure({
+    super.message = 'The AI provider account has no available quota.',
+  });
+}
+
+final class AiRequestCancelledFailure extends AppFailure {
+  const AiRequestCancelledFailure({
+    super.message = 'The AI request was cancelled.',
+  });
+}
+
 final class AiProviderFailure extends AppFailure {
   const AiProviderFailure({
     super.message = 'The AI provider could not complete the request.',
