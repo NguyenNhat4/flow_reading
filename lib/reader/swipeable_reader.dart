@@ -5,8 +5,10 @@ import 'package:flow_reading/books/book_models.dart';
 import 'package:flow_reading/books/text_anchors.dart';
 import 'package:flow_reading/reader/flutter_content_measurer.dart';
 import 'package:flow_reading/reader/pagination_engine.dart';
+import 'package:flow_reading/reader/reader_selection.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 class SwipeableReader extends StatefulWidget {
   const SwipeableReader({
@@ -14,6 +16,7 @@ class SwipeableReader extends StatefulWidget {
     required this.settings,
     required this.onPositionChanged,
     this.initialLocator,
+    this.onWordSelected,
     super.key,
   });
 
@@ -21,6 +24,9 @@ class SwipeableReader extends StatefulWidget {
   final ReaderSettings settings;
   final ReadingLocator? initialLocator;
   final ValueChanged<TextAnchor> onPositionChanged;
+
+  /// Receives a stable range whenever the reader selects a word.
+  final ValueChanged<WordSelection>? onWordSelected;
 
   @override
   State<SwipeableReader> createState() => _SwipeableReaderState();
@@ -37,6 +43,7 @@ class _SwipeableReaderState extends State<SwipeableReader> {
   Object? _paginationError;
   int _currentPage = 0;
   int _generation = 0;
+  WordSelection? _wordSelection;
 
   @override
   void didUpdateWidget(covariant SwipeableReader oldWidget) {
@@ -110,6 +117,8 @@ class _SwipeableReaderState extends State<SwipeableReader> {
                   page: pages[index],
                   layout: layout,
                   measurer: _measurer,
+                  wordSelection: _wordSelection,
+                  onWordSelected: _selectWord,
                 ),
               );
             },
@@ -208,8 +217,16 @@ class _SwipeableReaderState extends State<SwipeableReader> {
   void _showPage(int index) {
     final pages = _pages;
     if (pages == null || index < 0 || index >= pages.length) return;
-    setState(() => _currentPage = index);
+    setState(() {
+      _currentPage = index;
+      _wordSelection = null;
+    });
     widget.onPositionChanged(pages[index].boundary.start);
+  }
+
+  void _selectWord(WordSelection? selection) {
+    setState(() => _wordSelection = selection);
+    if (selection != null) widget.onWordSelected?.call(selection);
   }
 
   static int _pageForLocator(List<_BookPage> pages, ReadingLocator? locator) {
@@ -289,12 +306,16 @@ class _ReaderPageContent extends StatelessWidget {
     required this.page,
     required this.layout,
     required this.measurer,
+    required this.wordSelection,
+    required this.onWordSelected,
     super.key,
   });
 
   final _BookPage page;
   final ReaderLayout layout;
   final FlutterContentMeasurer measurer;
+  final WordSelection? wordSelection;
+  final ValueChanged<WordSelection?> onWordSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -322,11 +343,14 @@ class _ReaderPageContent extends StatelessWidget {
       if (endOffset <= startOffset) continue;
       fragments.add(
         _BlockFragment(
+          bookId: page.chapter.bookId,
           block: block,
           startOffset: startOffset,
           endOffset: endOffset,
           layout: layout,
           measurer: measurer,
+          wordSelection: wordSelection,
+          onWordSelected: onWordSelected,
         ),
       );
     }
@@ -359,18 +383,24 @@ class _ReaderPageContent extends StatelessWidget {
 
 class _BlockFragment extends StatelessWidget {
   const _BlockFragment({
+    required this.bookId,
     required this.block,
     required this.startOffset,
     required this.endOffset,
     required this.layout,
     required this.measurer,
+    required this.wordSelection,
+    required this.onWordSelected,
   });
 
+  final String bookId;
   final ContentBlock block;
   final int startOffset;
   final int endOffset;
   final ReaderLayout layout;
   final FlutterContentMeasurer measurer;
+  final WordSelection? wordSelection;
+  final ValueChanged<WordSelection?> onWordSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -395,19 +425,54 @@ class _BlockFragment extends StatelessWidget {
       );
     }
 
+    final selectedAnchor = wordSelection?.anchor;
+    final selectsBlock =
+        selectedAnchor != null &&
+        selectedAnchor.bookId == bookId &&
+        selectedAnchor.chapterId == block.chapterId &&
+        selectedAnchor.blockId == block.id;
     final span = measurer.textSpanForRange(
       block: block,
       settings: layout.settings,
       startOffset: startOffset,
       endOffset: endOffset,
+      selectedStartOffset: selectsBlock ? selectedAnchor.startOffset : null,
+      selectedEndOffset: selectsBlock ? selectedAnchor.endOffset : null,
+      selectionColor: Theme.of(context).colorScheme.primaryContainer,
     );
-    final text = RichText(
+    final selectedHere =
+        selectsBlock &&
+        selectedAnchor.startOffset < endOffset &&
+        selectedAnchor.endOffset > startOffset;
+    final text = _TappableTextFragment(
+      selectedWord: selectedHere ? wordSelection?.textSnapshot : null,
       text: TextSpan(
         style: TextStyle(color: DefaultTextStyle.of(context).style.color),
         children: [span],
       ),
-      textDirection: TextDirection.ltr,
-      textScaler: TextScaler.linear(layout.textScale),
+      textScale: layout.textScale,
+      onTapDisplayOffset: (displayOffset) {
+        final sourceOffset = measurer.sourceOffsetForDisplayPosition(
+          block: block,
+          settings: layout.settings,
+          startOffset: startOffset,
+          endOffset: endOffset,
+          displayOffset: displayOffset,
+        );
+        if (sourceOffset == null) {
+          onWordSelected(null);
+          return;
+        }
+        onWordSelected(
+          wordSelectionAt(
+            bookId: bookId,
+            chapterId: block.chapterId,
+            blockId: block.id,
+            sourceText: measurer.sourceText(block, layout.settings),
+            sourceOffset: sourceOffset,
+          ),
+        );
+      },
     );
     if (block is QuoteBlock) {
       return DecoratedBox(
@@ -425,5 +490,56 @@ class _BlockFragment extends StatelessWidget {
       );
     }
     return text;
+  }
+}
+
+class _TappableTextFragment extends StatefulWidget {
+  const _TappableTextFragment({
+    required this.text,
+    required this.textScale,
+    required this.onTapDisplayOffset,
+    this.selectedWord,
+  });
+
+  final TextSpan text;
+  final double textScale;
+  final ValueChanged<int> onTapDisplayOffset;
+  final String? selectedWord;
+
+  @override
+  State<_TappableTextFragment> createState() => _TappableTextFragmentState();
+}
+
+class _TappableTextFragmentState extends State<_TappableTextFragment> {
+  final _textKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      selected: widget.selectedWord != null,
+      label: widget.selectedWord == null
+          ? null
+          : 'Selected word: ${widget.selectedWord}',
+      child: GestureDetector(
+        key: widget.selectedWord == null
+            ? null
+            : const ValueKey('reader-selected-word'),
+        behavior: HitTestBehavior.translucent,
+        onTapDown: (details) {
+          final paragraph = _textKey.currentContext?.findRenderObject();
+          if (paragraph is! RenderParagraph) return;
+          final position = paragraph.getPositionForOffset(
+            details.localPosition,
+          );
+          widget.onTapDisplayOffset(position.offset);
+        },
+        child: RichText(
+          key: _textKey,
+          text: widget.text,
+          textDirection: TextDirection.ltr,
+          textScaler: TextScaler.linear(widget.textScale),
+        ),
+      ),
+    );
   }
 }

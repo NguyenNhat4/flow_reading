@@ -144,6 +144,8 @@ Implement:
 
 ## TASK-308 — Implement word selection
 
+**Status:** Complete
+
 **Priority:** P1
 
 Allow users to tap a word.

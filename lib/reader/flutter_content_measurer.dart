@@ -137,6 +137,9 @@ final class FlutterContentMeasurer implements ContentMeasurer {
     required ReaderSettings settings,
     required int startOffset,
     required int endOffset,
+    int? selectedStartOffset,
+    int? selectedEndOffset,
+    Color? selectionColor,
   }) {
     if (block is ImageBlock) {
       throw ArgumentError.value(block, 'block', 'images do not contain text');
@@ -154,8 +157,60 @@ final class FlutterContentMeasurer implements ContentMeasurer {
     }
     final displayStart = projection.displayOffsetForSource(startOffset);
     final displayEnd = projection.displayOffsetForSource(endOffset);
+    if (selectedStartOffset != null &&
+        selectedEndOffset != null &&
+        selectionColor != null &&
+        selectedStartOffset < endOffset &&
+        selectedEndOffset > startOffset) {
+      final selectedStart = math.max(startOffset, selectedStartOffset);
+      final selectedEnd = math.min(endOffset, selectedEndOffset);
+      final selectedDisplayStart = projection.displayOffsetForSource(
+        selectedStart,
+      );
+      final selectedDisplayEnd = projection.displayOffsetForSource(selectedEnd);
+      return TextSpan(
+        children: [
+          projection.spanBetween(displayStart, selectedDisplayStart),
+          TextSpan(
+            style: TextStyle(backgroundColor: selectionColor),
+            children: [
+              projection.spanBetween(selectedDisplayStart, selectedDisplayEnd),
+            ],
+          ),
+          projection.spanBetween(selectedDisplayEnd, displayEnd),
+        ],
+      );
+    }
     return projection.spanBetween(displayStart, displayEnd);
   }
+
+  /// Maps a display character in a rendered fragment back to its canonical
+  /// UTF-16 source offset. Decorations such as list markers return `null`.
+  int? sourceOffsetForDisplayPosition({
+    required ContentBlock block,
+    required ReaderSettings settings,
+    required int startOffset,
+    required int endOffset,
+    required int displayOffset,
+  }) {
+    final projection = _projection(block, settings);
+    final displayStart = projection.displayOffsetForSource(startOffset);
+    final displayEnd = projection.displayOffsetForSource(endOffset);
+    if (displayEnd <= displayStart) return null;
+    final absoluteDisplay = (displayStart + displayOffset).clamp(
+      displayStart,
+      displayEnd - 1,
+    );
+    if (projection.displayToSource[absoluteDisplay] ==
+        projection.displayToSource[absoluteDisplay + 1]) {
+      return null;
+    }
+    return projection.sourceOffsetForDisplay(absoluteDisplay);
+  }
+
+  /// Returns the canonical source text used by stable offsets for [block].
+  String sourceText(ContentBlock block, ReaderSettings settings) =>
+      _projection(block, settings).sourceText;
 
   static int _sourceEndForLine(
     TextPainter painter,
@@ -259,12 +314,14 @@ final class _TextProjection {
     required this.runs,
     required this.displayToSource,
     required this.sourceLength,
+    required this.sourceText,
     required this.listItemEnds,
   });
 
   final List<_StyledRun> runs;
   final List<int> displayToSource;
   final int sourceLength;
+  final String sourceText;
   final List<int> listItemEnds;
 
   int get displayLength => displayToSource.length - 1;
@@ -313,6 +370,7 @@ final class _ProjectionBuilder {
   final List<_StyledRun> _runs = [];
   final List<int> _displayToSource = [0];
   final List<int> _listItemEnds = [];
+  final StringBuffer _sourceText = StringBuffer();
   var _displayOffset = 0;
   var _sourceOffset = 0;
 
@@ -333,6 +391,7 @@ final class _ProjectionBuilder {
 
   void addSource(String text, TextStyle style) {
     _addRun(text, style);
+    _sourceText.write(text);
     for (var index = 0; index < text.length; index++) {
       _sourceOffset++;
       _displayToSource.add(_sourceOffset);
@@ -365,6 +424,7 @@ final class _ProjectionBuilder {
     runs: List.unmodifiable(_runs),
     displayToSource: List.unmodifiable(_displayToSource),
     sourceLength: _sourceOffset,
+    sourceText: _sourceText.toString(),
     listItemEnds: List.unmodifiable(_listItemEnds),
   );
 }

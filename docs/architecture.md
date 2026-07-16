@@ -241,6 +241,13 @@ locator, and rebuilds the temporary reader page at the page containing it. A
 chapter-only entry uses that chapter's first readable block; missing targets
 show a recoverable message and leave the current position unchanged.
 
+Word selection reuses the same display-to-source projection as pagination.
+`RenderParagraph` converts the tap to a displayed character, list decorations
+are rejected because they consume no source offsets, and Unicode-aware word
+boundaries produce a stable `WordSelection` in one canonical block. The reader
+holds one paint-only highlight at a time; its background does not change text
+metrics or page boundaries.
+
 ## Implementation order
 
 ```text

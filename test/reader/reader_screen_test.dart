@@ -6,6 +6,7 @@ import 'package:flow_reading/books/text_anchors.dart';
 import 'package:flow_reading/reader/flutter_content_measurer.dart';
 import 'package:flow_reading/reader/pagination_engine.dart';
 import 'package:flow_reading/reader/reader_screen.dart';
+import 'package:flow_reading/reader/reader_selection.dart';
 import 'package:flow_reading/reader/swipeable_reader.dart';
 import 'package:flow_reading/reader/table_of_contents.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
@@ -13,6 +14,72 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'word selection keeps internal punctuation and trims surrounding marks',
+    () {
+      const text = "Hello, don't re-enter naïve.";
+
+      final contraction = wordSelectionAt(
+        bookId: 'book-id',
+        chapterId: 'chapter-id',
+        blockId: 'block-id',
+        sourceText: text,
+        sourceOffset: 9,
+      );
+      final hyphenated = wordSelectionAt(
+        bookId: 'book-id',
+        chapterId: 'chapter-id',
+        blockId: 'block-id',
+        sourceText: text,
+        sourceOffset: 16,
+      );
+
+      expect(contraction?.textSnapshot, "don't");
+      expect(contraction?.anchor.startOffset, 7);
+      expect(contraction?.anchor.endOffset, 12);
+      expect(hyphenated?.textSnapshot, 're-enter');
+      expect(hyphenated?.anchor.startOffset, 13);
+      expect(hyphenated?.anchor.endOffset, 21);
+      expect(
+        wordSelectionAt(
+          bookId: 'book-id',
+          chapterId: 'chapter-id',
+          blockId: 'block-id',
+          sourceText: text,
+          sourceOffset: 5,
+        ),
+        isNull,
+      );
+    },
+  );
+
+  test('selection projection rejects display-only list markers', () {
+    const measurer = FlutterContentMeasurer();
+    final block = _mixedChapter.blocks.whereType<ListBlock>().single;
+    final endOffset = measurer.sourceLength(block);
+
+    expect(
+      measurer.sourceOffsetForDisplayPosition(
+        block: block,
+        settings: ReaderSettings.defaults,
+        startOffset: 0,
+        endOffset: endOffset,
+        displayOffset: 0,
+      ),
+      isNull,
+    );
+    expect(
+      measurer.sourceOffsetForDisplayPosition(
+        block: block,
+        settings: ReaderSettings.defaults,
+        startOffset: 0,
+        endOffset: endOffset,
+        displayOffset: 2,
+      ),
+      0,
+    );
+  });
+
   test('pagination v2 reserves render slack and keeps anchors contiguous', () {
     final previous = ReaderLayout(
       settings: ReaderSettings(
@@ -102,6 +169,45 @@ void main() {
     await _swipePrevious(tester);
     expect(find.text('Read locally.', findRichText: true), findsOneWidget);
     expect(find.text('First chapter · Page 1 of 2'), findsOneWidget);
+  });
+
+  testWidgets('tap selects and visibly retains one stable word range', (
+    tester,
+  ) async {
+    WordSelection? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 400,
+          height: 400,
+          child: SwipeableReader(
+            chapters: [_chapters.first],
+            settings: ReaderSettings.defaults,
+            onPositionChanged: (_) {},
+            onWordSelected: (selection) => selected = selection,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final renderedText = find.text('Read locally.', findRichText: true);
+    await tester.tapAt(tester.getTopLeft(renderedText) + const Offset(15, 12));
+    await tester.pump();
+
+    expect(selected?.textSnapshot, 'Read');
+    expect(selected?.anchor.bookId, 'book-id');
+    expect(selected?.anchor.chapterId, 'chapter-1');
+    expect(selected?.anchor.blockId, 'block-1');
+    expect(selected?.anchor.startOffset, 0);
+    expect(selected?.anchor.endOffset, 4);
+    expect(find.byKey(const ValueKey('reader-selected-word')), findsOneWidget);
+    final selectedText = tester.widget<RichText>(renderedText);
+    expect(_hasPaintedBackground(selectedText.text), isTrue);
+    expect(
+      find.bySemanticsLabel(RegExp(r'Selected word: Read')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('table of contents navigates by stable reference and saves it', (
@@ -481,6 +587,12 @@ void main() {
 
     expect(find.text('This book could not be paginated.'), findsOneWidget);
   });
+}
+
+bool _hasPaintedBackground(InlineSpan span) {
+  if (span is! TextSpan) return false;
+  if (span.style?.backgroundColor != null) return true;
+  return span.children?.any(_hasPaintedBackground) ?? false;
 }
 
 Future<void> _pumpReader(
