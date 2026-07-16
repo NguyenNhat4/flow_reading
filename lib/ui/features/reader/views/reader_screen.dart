@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/ui/core/reader_theme.dart';
+import 'package:flow_reading/ui/features/reader/view_models/grammar_explanation_view_model.dart';
 import 'package:flow_reading/ui/features/reader/view_models/passage_explanation_view_model.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
 import 'package:flow_reading/ui/features/reader/view_models/word_explanation_view_model.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_layout_controls.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_action_menu.dart';
+import 'package:flow_reading/ui/features/reader/views/grammar_explanation_sheet.dart';
 import 'package:flow_reading/ui/features/reader/views/passage_explanation_sheet.dart';
 import 'package:flow_reading/ui/features/reader/views/saved_items_panel.dart';
 import 'package:flow_reading/ui/features/reader/views/search_panel.dart';
@@ -22,12 +24,14 @@ class ReaderScreen extends StatefulWidget {
     required this.viewModel,
     this.createWordExplanationViewModel,
     this.createPassageExplanationViewModel,
+    this.createGrammarExplanationViewModel,
     super.key,
   });
 
   final ReaderViewModel viewModel;
   final CreateWordExplanationViewModel? createWordExplanationViewModel;
   final CreatePassageExplanationViewModel? createPassageExplanationViewModel;
+  final CreateGrammarExplanationViewModel? createGrammarExplanationViewModel;
 
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
@@ -105,6 +109,10 @@ class _ReaderScreenState extends State<ReaderScreen>
       await _showPassageExplanation(request);
       return;
     }
+    if (request.action == ReaderAction.explainGrammar) {
+      await _showGrammarExplanation(request);
+      return;
+    }
     if (request.action == ReaderAction.addNote) {
       await _editNote(request.anchor);
       return;
@@ -175,6 +183,35 @@ class _ReaderScreenState extends State<ReaderScreen>
       useSafeArea: true,
       showDragHandle: true,
       builder: (_) => PassageExplanationSheet(
+        viewModel: createViewModel(
+          chapters: widget.viewModel.chapters,
+          selection: selection,
+          currentPosition: currentPosition,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showGrammarExplanation(ReaderActionRequest request) async {
+    final createViewModel = widget.createGrammarExplanationViewModel;
+    if (createViewModel == null || !mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Grammar explanation is unavailable.')),
+      );
+      return;
+    }
+    final selection = PassageSelection(
+      anchor: request.anchor,
+      textSnapshot: request.textSnapshot,
+    );
+    final currentPosition =
+        widget.viewModel.locator ?? ReadingLocator(anchor: request.anchor);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => GrammarExplanationSheet(
         viewModel: createViewModel(
           chapters: widget.viewModel.chapters,
           selection: selection,

@@ -34,6 +34,7 @@ Do not read every linked document by default.
 | Cached AI artifacts | Cached AI result in `docs/data-model.md`, `docs/invariants.md` | AI cache model/repository and database migration |
 | Contextual word explanation | Word explanation in `docs/data-model.md`, AI invariants, reader selection requirements | Word-explanation use case and ViewModel, reader sheet, AI settings |
 | Contextual passage explanation | Passage explanation in `docs/data-model.md`, AI invariants, reader selection requirements | Streaming passage-explanation use case, ViewModel, reader sheet |
+| Contextual grammar explanation | Grammar explanation in `docs/data-model.md`, AI invariants, reader selection requirements | Grammar-explanation use case and ViewModel, reader sheet |
 | Highlights, notes, bookmarks, AI, translation, or sync | `docs/invariants.md`, `docs/data-model.md`, relevant product requirement | Domain model/repository, data repository, reader UI |
 | Product clarification | Relevant requirement in `docs/product-plan.md` | Varies |
 

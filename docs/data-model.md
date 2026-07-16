@@ -319,6 +319,19 @@ The reader sheet keeps the exact selected passage visible while loading and
 offers Cancel. Failure and cancellation states retain the passage and expose
 Retry without moving the logical reader position.
 
+### Grammar explanation
+
+`GrammarExplanation` contains one or more `GrammarExplanationPoint` values.
+Every point names a feature, quotes exact evidence from the selected passage,
+explains the feature, and states why it matters for understanding that passage.
+Interpretive notes are kept separate.
+
+`GenerateGrammarExplanationUseCase` uses the anchored context and versioned
+grammar prompt, restores compatible artifacts before network access, validates
+the structured response, and caches only successful results. The reader sheet
+shows the selected passage and point-by-point evidence instead of a generic
+grammar lesson.
+
 ### AI conversation
 
 `AiConversation`

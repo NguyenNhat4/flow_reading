@@ -163,6 +163,8 @@ Return:
 
 ## TASK-509 — Add grammar explanation
 
+**Status:** Complete
+
 **Priority:** P2
 
 **Acceptance criteria:**
