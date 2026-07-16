@@ -17,4 +17,4 @@ For each task:
 
 ## Approved application structure
 
-use skill for architectural best pratices and follow
+must follow architectural best pratices skill to implement feature.
