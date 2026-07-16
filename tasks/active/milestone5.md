@@ -39,6 +39,8 @@ Create one common interface for:
 
 ## TASK-503 — Implement first AI provider
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**

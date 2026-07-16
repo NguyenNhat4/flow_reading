@@ -12,6 +12,7 @@ import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/data/services/local_book_file_storage.dart';
 import 'package:flow_reading/data/services/local_epub_content_parser.dart';
 import 'package:flow_reading/data/services/mlkit_book_language_detector.dart';
+import 'package:flow_reading/data/services/open_ai_provider.dart';
 import 'package:flow_reading/domain/use_cases/detect_book_language.dart';
 import 'package:flow_reading/domain/use_cases/import_book.dart';
 import 'package:flow_reading/domain/use_cases/remove_book.dart';
@@ -35,6 +36,7 @@ Future<AppDependencies> _createDependencies() async {
   );
   return AppDependencies(
     aiCredentialRepository: SecureAiCredentialRepository(),
+    aiProvider: OpenAiProvider(),
     bookRepository: repository,
     bookmarkRepository: SqliteBookmarkRepository(database),
     bookSearchRepository: SqliteBookSearchRepository(database),

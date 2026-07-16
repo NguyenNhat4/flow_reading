@@ -269,6 +269,11 @@ instructions, input, model selection, and an optional JSON schema, but never a
 credential. Provider implementations map raw transport and service errors to
 shared `AppFailure` types before returning control to application or UI code.
 
+The initial implementation is `OpenAiProvider`, using `GET /v1/models` for
+credential and default-model validation and `POST /v1/responses` for completion
+and server-sent-event streaming. It sends `store: false`, uses abortable HTTP
+requests for cancellation, and defaults to `gpt-5.6-luna`.
+
 ### AI conversation
 
 `AiConversation`
