@@ -1,17 +1,28 @@
-# flow_reading
+# Flow Reading
 
-A new Flutter project.
+Flow Reading is a local-first Flutter Android EPUB reader. It imports EPUB files
+into canonical content, paginates that content for the active reader layout,
+and persists logical reading positions using stable content anchors.
 
-## Getting Started
+## Architecture
 
-This project is a starting point for a Flutter application.
+The application uses three layers:
 
-A few resources to get you started if this is your first Flutter project:
+- `lib/domain`: immutable models, repository ports, and use cases.
+- `lib/data`: SQLite, files, EPUB parsing, and platform-plugin adapters.
+- `lib/ui`: MVVM ViewModels and Flutter views grouped by feature.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+`lib/main.dart` is the composition root. See
+`docs/project-architecture-guide.md` for dependency rules and feature flows.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Development
+
+```shell
+flutter pub get
+flutter analyze
+flutter test
+flutter run
+```
+
+Android is the primary target and a physical device is normally connected over
+USB for smoke testing reader interactions.

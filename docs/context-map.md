@@ -1,7 +1,6 @@
 # Context Map
 
-Use this file to determine which documentation is relevant to the assigned task.
-
+Use this file to locate documentation and code relevant to an assigned task.
 Do not read every linked document by default.
 
 ## Always read
@@ -11,104 +10,77 @@ Do not read every linked document by default.
 
 ## Read by task area
 
-| Task area                   | Read                                                                 | Main code location                 |
-| --------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
-| Project orientation and progress | `docs/project-architecture-guide.md`                           | All approved modules               |
-| EPUB validation             | Validation section of `docs/epub-import.md`                         | `lib/books/epub_validator.dart`    |
-| Original EPUB storage       | Storage lifecycle section of `docs/epub-import.md`                  | `lib/books/`, `lib/platform/`      |
-| Metadata, spine, and TOC    | Package parsing section of `docs/epub-import.md`, `docs/data-model.md` | `lib/books/`                     |
-| Canonical HTML conversion   | Canonical conversion section of `docs/epub-import.md`, `docs/data-model.md` | `lib/books/`                |
-| Sentence segmentation       | Sentence segmentation section of `docs/epub-import.md`, sentence section of `docs/data-model.md` | `lib/books/` |
-| EPUB import orchestration   | Import orchestration section of `docs/epub-import.md`, EPUB import section of `docs/architecture.md` | `lib/books/`, `lib/app/` |
-| Source language detection   | Language detection section of `docs/epub-import.md`                 | `lib/books/`, `lib/platform/`      |
-| Canonical book model        | `docs/data-model.md`, `docs/invariants.md`                           | `lib/books/`                       |
-| Stable IDs and text anchors | `docs/invariants.md`, `docs/data-model.md`                           | `lib/books/`, `lib/shared/`        |
-| Library UI, search, sorting, and local opening | Import orchestration section of `docs/epub-import.md`, reading state in `docs/invariants.md` | `lib/app/`, `lib/reader/` |
-| Local book removal          | Storage lifecycle and repository sections of `docs/epub-import.md` | `lib/books/`, `lib/platform/`, `lib/app/` |
-| Pagination                  | Pagination section of `docs/architecture.md`, derived data in `docs/data-model.md`, `docs/invariants.md` | `lib/reader/` |
-| Reading position            | `docs/invariants.md`, reader section of `docs/architecture.md`       | `lib/reader/`                      |
-| Highlights and notes        | `docs/invariants.md`, annotation section of `docs/data-model.md`     | `lib/reader/`                      |
-| AI provider                 | Intelligence section of `docs/architecture.md`                       | `lib/intelligence/`                |
-| AI context builder          | Intelligence section of `docs/architecture.md`, `docs/invariants.md` | `lib/intelligence/`                |
-| Translation                 | Translation section of `docs/architecture.md`, `docs/invariants.md`  | `lib/intelligence/`, `lib/reader/` |
-| Chapter overview            | Intelligence section of `docs/architecture.md`                       | `lib/intelligence/`                |
-| Reader settings and layout | Reader settings section of `docs/data-model.md`, settings and persistence sections of `docs/architecture.md` | `lib/settings/`, `lib/platform/` |
-| Local persistence           | Persistence section of `docs/architecture.md`, local persistence section of `docs/data-model.md` | `lib/platform/` |
-| Book repository             | Repository and database section of `docs/epub-import.md`, local persistence section of `docs/data-model.md` | `lib/books/`, `lib/platform/` |
-| Synchronization             | Sync section of `docs/architecture.md`, `docs/invariants.md`         | `lib/sync/`                        |
-| Product clarification       | Relevant requirement inside `docs/product-plan.md`                   | Varies                             |
+| Task area | Read | Main code location |
+| --- | --- | --- |
+| Architecture and progress | `docs/project-architecture-guide.md` | All layers |
+| Dart and Flutter conventions | Relevant file under `docs/flutter-guidelines/` | Affected layer |
+| EPUB validation and parsing | Relevant section of `docs/epub-import.md` | `lib/data/services/` |
+| Canonical conversion and sentence segmentation | `docs/epub-import.md`, `docs/data-model.md` | Data services, domain use cases |
+| EPUB import orchestration | Import orchestration in `docs/epub-import.md` | `ImportBookUseCase`, library ViewModel |
+| Canonical book model | `docs/data-model.md`, `docs/invariants.md` | `lib/domain/models/` |
+| Stable IDs and anchors | `docs/invariants.md`, `docs/data-model.md` | Domain models |
+| Library UI, search, and sorting | `docs/epub-import.md`, reading-state invariants | Library ViewModel and views |
+| Local book removal | Storage lifecycle in `docs/epub-import.md` | Remove-book use case, data storage |
+| Pagination | `docs/reader-pagination-layout.md`, `docs/data-model.md`, `docs/invariants.md` | Pagination use case, reader UI |
+| Reading position | `docs/invariants.md`, `docs/reader-pagination-layout.md` | Reader ViewModel and repositories |
+| Reader selection and actions | `docs/invariants.md`, `docs/reader-pagination-layout.md` | Reader UI feature |
+| Reader settings and themes | Reader settings in `docs/data-model.md` | Domain settings, reader UI, data repository |
+| Local persistence | Local persistence in `docs/data-model.md` | Data repositories and services |
+| Highlights, notes, AI, translation, or sync | `docs/invariants.md`, relevant product requirement | Future domain/data/UI feature |
+| Product clarification | Relevant requirement in `docs/product-plan.md` | Varies |
 
 ## Documentation roles
 
-### `docs/product-plan.md`
+### `docs/project-architecture-guide.md`
 
-Contains the complete product requirements.
+The source of truth for layer responsibilities, dependency direction, MVVM,
+repository ownership, dependency injection, and feature flow.
 
-Read it only when:
+### `docs/flutter-guidelines/`
 
-- The task file references a specific requirement ID.
-- Acceptance criteria are ambiguous.
-- Product behavior must be clarified.
+Generic implementation defaults:
 
-Do not read it merely to implement a normal technical task.
+- `code-style.md` for Dart APIs, quality, dependencies, and linting.
+- `application-patterns.md` for MVVM, state, injection, and serialization.
+- `testing-and-documentation.md` for tests and public API documentation.
+- `ui-and-accessibility.md` for widgets, layouts, themes, and accessibility.
 
-### `docs/architecture.md`
-
-Contains system boundaries and component interactions.
-
-Read only the section linked by the task file.
+Project invariants and task acceptance criteria take precedence.
 
 ### `docs/invariants.md`
 
-Contains rules that must remain true across modules.
-
-Read for tasks involving:
-
-- Stable identifiers.
-- Reading position.
-- Pagination.
-- Annotations.
-- Translations.
-- AI references.
-- Synchronization.
+Rules that must remain true for stable identifiers, positions, pagination,
+annotations, translations, intelligence references, and synchronization.
 
 ### `docs/data-model.md`
 
-Contains canonical persisted and in-memory models.
-
-Read for tasks that create or change stored data.
+Canonical persisted and in-memory models. Read it when changing stored data or
+serialization.
 
 ### `docs/epub-import.md`
 
-Contains the implemented Milestone 1 import pipeline, its feature/platform
-contracts, failure cleanup, parsing stages, and focused validation guidance.
+The implemented EPUB pipeline, storage lifecycle, cleanup behavior, parsing
+stages, and validation guidance.
 
-Read only the relevant section for work involving EPUB validation, storage,
-package parsing, canonical conversion, sentence segmentation, import progress,
-book persistence, or source-language detection.
+### `docs/product-plan.md`
+
+Complete product requirements. Read only when the task references a requirement
+or product behavior is ambiguous.
 
 ## Source-of-truth priority
 
-When information conflicts, use this order:
-
 1. Assigned task acceptance criteria.
 2. `docs/invariants.md`.
-3. `docs/architecture.md`.
+3. `docs/project-architecture-guide.md`.
 4. `docs/epub-import.md`.
 5. `docs/data-model.md`.
 6. `docs/product-plan.md`.
-7. Existing implementation.
+7. Relevant Flutter guideline.
+8. Existing implementation.
 
-Do not silently resolve meaningful conflicts. Report them before implementation.
+Do not silently resolve meaningful conflicts.
 
-## Repository inspection rules
+## Repository inspection
 
-Start by inspecting only:
-
-1. Files explicitly listed in the task.
-2. Direct imports of those files.
-3. Tests for the affected component.
-
-Expand inspection only when a dependency or interface requires it.
-
-Do not recursively inspect every file in `lib/`.
+Start with files named by the task, their direct imports, and affected tests.
+Expand only when an interface or dependency requires it.

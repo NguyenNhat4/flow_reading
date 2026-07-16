@@ -44,6 +44,8 @@ Convert canonical chapter blocks into temporary page boundaries.
 
 ## TASK-303 — Build swipeable reader
 
+**Status:** Complete
+
 **Priority:** P0
 
 Implement:
@@ -62,6 +64,8 @@ Implement:
 ---
 
 ## TASK-304 — Save logical reading position
+
+**Status:** Complete
 
 **Priority:** P0
 
@@ -85,6 +89,8 @@ updatedAt
 
 ## TASK-305 — Preserve position after repagination
 
+**Status:** Complete
+
 **Priority:** P0
 
 When the user changes layout:
@@ -104,6 +110,8 @@ When the user changes layout:
 
 ## TASK-306 — Add reader themes
 
+**Status:** Complete
+
 **Priority:** P1
 
 Implement:
@@ -122,6 +130,8 @@ Implement:
 
 ## TASK-307 — Add table-of-contents navigation
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**
@@ -133,6 +143,8 @@ Implement:
 ---
 
 ## TASK-308 — Implement word selection
+
+**Status:** Complete
 
 **Priority:** P1
 
@@ -148,6 +160,8 @@ Allow users to tap a word.
 
 ## TASK-309 — Implement passage selection
 
+**Status:** Complete
+
 **Priority:** P1
 
 Allow long-press selection of a sentence or passage.
@@ -161,6 +175,8 @@ Allow long-press selection of a sentence or passage.
 ---
 
 ## TASK-310 — Create reader action menu
+
+**Status:** Complete
 
 **Priority:** P1
 
