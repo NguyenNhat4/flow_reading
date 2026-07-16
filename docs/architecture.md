@@ -229,6 +229,11 @@ locator and the device-global settings before rebuilding pagination. Font,
 spacing, margin, text-scale, and viewport changes all restore the temporary page
 containing that locator rather than reusing its previous page number.
 
+Light, dark, and paper themes use reader-local Material color schemes and are
+persisted in the same global preferences. Theme changes update page paint and
+Android system-bar colors without invalidating page boundaries; the paper
+palette uses a warm surface with a dark-brown foreground for readable contrast.
+
 ## Implementation order
 
 ```text

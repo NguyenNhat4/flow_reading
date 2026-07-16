@@ -42,7 +42,7 @@ class _SwipeableReaderState extends State<SwipeableReader> {
   void didUpdateWidget(covariant SwipeableReader oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.chapters, widget.chapters) ||
-        oldWidget.settings != widget.settings) {
+        _paginationSettingsChanged(oldWidget.settings, widget.settings)) {
       _generation++;
       _requestedLayoutKey = null;
       _activeLayoutKey = null;
@@ -269,6 +269,13 @@ class _SwipeableReaderState extends State<SwipeableReader> {
     return left.startOffset.compareTo(right.startOffset);
   }
 }
+
+bool _paginationSettingsChanged(ReaderSettings left, ReaderSettings right) =>
+    left.fontFamily != right.fontFamily ||
+    left.fontSize != right.fontSize ||
+    left.lineHeight != right.lineHeight ||
+    left.margins != right.margins ||
+    left.languageMode != right.languageMode;
 
 final class _BookPage {
   const _BookPage({required this.chapter, required this.boundary});

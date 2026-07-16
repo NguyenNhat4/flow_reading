@@ -110,6 +110,8 @@ When the user changes layout:
 
 ## TASK-306 — Add reader themes
 
+**Status:** Complete
+
 **Priority:** P1
 
 Implement:

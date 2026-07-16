@@ -14,6 +14,7 @@ class ReaderLayoutControls extends StatefulWidget {
 }
 
 class _ReaderLayoutControlsState extends State<ReaderLayoutControls> {
+  late ReaderTheme _theme = widget.settings.theme;
   late double _fontSize = widget.settings.fontSize;
   late double _lineHeight = widget.settings.lineHeight;
   late double _horizontalMargin =
@@ -35,6 +36,21 @@ class _ReaderLayoutControlsState extends State<ReaderLayoutControls> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 20),
+            Text('Theme', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            SegmentedButton<ReaderTheme>(
+              key: const ValueKey('reader-theme-selector'),
+              segments: const [
+                ButtonSegment(value: ReaderTheme.light, label: Text('Light')),
+                ButtonSegment(value: ReaderTheme.dark, label: Text('Dark')),
+                ButtonSegment(value: ReaderTheme.paper, label: Text('Paper')),
+              ],
+              selected: {_theme},
+              onSelectionChanged: (selection) {
+                setState(() => _theme = selection.single);
+              },
+            ),
+            const SizedBox(height: 24),
             _SliderSetting(
               label: 'Font size',
               valueLabel: _fontSize.toStringAsFixed(0),
@@ -115,7 +131,7 @@ class _ReaderLayoutControlsState extends State<ReaderLayoutControls> {
       right: _horizontalMargin,
       bottom: _verticalMargin,
     ),
-    theme: widget.settings.theme,
+    theme: _theme,
     orientation: widget.settings.orientation,
     languageMode: widget.settings.languageMode,
   );
