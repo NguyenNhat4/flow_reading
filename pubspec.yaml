@@ -40,8 +40,6 @@ dependencies:
   archive: ^4.0.9
   # Encrypted platform storage for AI provider API keys.
   flutter_secure_storage: ^10.3.1
-  # Testable state management separated from Flutter widgets.
-  flutter_riverpod: ^3.3.2
   # Composable HTTP client abstraction for AI provider requests.
   http: ^1.6.0
   # Network-type observation; requests still handle connectivity failures.

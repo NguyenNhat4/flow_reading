@@ -8,7 +8,7 @@ stages interact and where future changes belong.
 
 ## Import orchestration
 
-`BookImportService` coordinates one import without exposing plugins, files, or
+`ImportBookUseCase` coordinates one import without exposing plugins, files, or
 SQLite to widgets.
 
 ```text
@@ -18,7 +18,7 @@ AndroidEpubPicker
   → EpubPackageParser
   → CanonicalHtmlConverter
   → SentenceSegmenter
-  → BookLanguageDetectionService
+  → DetectBookLanguageUseCase
   → BookFileStorage.stageAsset/commit
   → BookRepository.save
 ```
@@ -27,15 +27,15 @@ CPU-heavy ZIP, XML, and HTML processing runs through an isolate. The operation
 exposes a progress stream, a result future, and cancellation. Current stages are
 validation, copying, metadata, chapters, language, images, saving, and complete.
 
-The library UI depends on the picker and books-owned contracts. Platform wiring
-is created in `lib/app/flow_reading_app.dart`; widgets do not open databases or
-read files directly.
+`LibraryViewModel` depends on domain ports and the import use case. Concrete
+data services and repositories are created in `lib/main.dart`; widgets do not
+open databases or read files directly.
 
 On Android, `AndroidEpubPicker` opens the system document picker for a single
 file and reads the selected document into memory. The native chooser is left
 unfiltered because Android document providers do not consistently map EPUB
 extensions to MIME types; the platform adapter instead applies a
-case-insensitive `.epub` filename check before starting `BookImportService`.
+case-insensitive `.epub` filename check before starting `ImportBookUseCase`.
 Cancelling the system picker returns `null`, so no import operation starts and
 the library remains unchanged. EPUB structure is still verified by
 `EpubValidator` as the first import stage.
@@ -147,7 +147,7 @@ paragraph text exactly, including whitespace between sentences.
 
 ## Language detection
 
-`BookLanguageDetectionService` samples up to 20,000 characters from canonical
+`DetectBookLanguageUseCase` samples up to 20,000 characters from canonical
 headings, paragraphs, quotes, and lists. The platform adapter uses bundled,
 on-device ML Kit identification with a 0.5 confidence threshold.
 

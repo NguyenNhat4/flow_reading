@@ -1,228 +1,140 @@
-# Flow Reading Folder Scope
+# Flow Reading Architecture Guide
 
-This page explains what each folder is responsible for and what should not go
-inside it.
+Flow Reading uses three application layers: domain, data, and UI. Dependencies
+point inward toward the domain so local reading behavior can be tested without
+Flutter widgets, SQLite, files, or platform plugins.
 
-## Quick view
-
-| Folder | Its job | Current state |
-| --- | --- | --- |
-| `main.dart` | Start Flutter | Done |
-| `app/` | Start features and change screens | In use |
-| `books/` | Import EPUBs and describe book content | Mostly complete |
-| `reader/` | Display books and manage reading activity | Early version |
-| `platform/` | Work with SQLite, files, Android, and plugins | In use |
-| `shared/` | Hold small pieces used by several folders | Small, in use |
-| `settings/` | Manage reading preferences | Empty, future work |
-| `intelligence/` | Manage AI and translation | Empty, future work |
-
-## `lib/main.dart`
-
-### Put here
-
-- The command that starts Flutter.
-- The root app widget.
-
-### Do not put here
-
-- Screens.
-- Database code.
-- EPUB importing.
-- Reading or AI features.
-
-This file should remain very small.
-
-## `lib/app/`
-
-### Put here
-
-- App startup.
-- Creating the database, storage, importer, and other helpers.
-- Moving between the library and reader screens.
-- Screens that join several parts of the app together.
-
-### Do not put here
-
-- SQLite commands.
-- Direct file access.
-- EPUB parsing rules.
-- AI provider code.
-
-`app/` connects the other folders. For example, it creates a SQLite book
-storage helper, gives it to the library screen, and opens the reader when a
-book is tapped.
-
-## `lib/books/`
-
-### Put here
-
-- Book, chapter, paragraph, heading, list, quote, sentence, and image data.
-- EPUB checking and importing.
-- Reading EPUB metadata and chapter order.
-- Cleaning EPUB HTML.
-- Permanent book and text IDs.
-- Exact text locations used by reading positions and future highlights.
-- Import progress and cancellation.
-- The list of book operations storage must support.
-
-### Do not put here
-
-- Reading-screen layout.
-- Highlights or notes screens.
-- AI explanations or translation.
-- SQLite commands or Android plugin calls.
-
-`books/` answers: “What is this EPUB, and what content is inside it?”
-
-## `lib/reader/`
-
-### Put here
-
-- The reading screen.
-- Chapter and future page display.
-- Saving and restoring reading position.
-- Future text selection, bookmarks, highlights, notes, and book search.
-- Future table-of-contents navigation.
-
-### Do not put here
-
-- EPUB importing.
-- SQLite commands.
-- File-picker code.
-- AI provider code.
-
-`reader/` answers: “How does the user read and interact with an imported book?”
-
-The current reader only shows chapters and saves a basic text-block position.
-Proper screen-sized pages and reading tools are still future work.
-
-## `lib/platform/`
-
-### Put here
-
-- SQLite code.
-- Reading and writing files.
-- Android file picker.
-- Secure storage.
-- Network and connectivity code.
-- Phone or Flutter plugin code.
-- On-device language detection.
-
-### Do not put here
-
-- Screen design.
-- Rules describing book content.
-- Reading behavior.
-- AI prompts or explanation rules.
-
-`platform/` answers: “How do we perform this operation on the real phone?”
-
-For example, `books/` says books must be loadable. `platform/` contains the
-SQLite code that actually loads them.
-
-## `lib/shared/`
-
-### Put here
-
-- Small data or errors needed by several folders.
-
-### Do not put here
-
-- Complete features.
-- Random helper functions used in only one place.
-- Code that clearly belongs to books, reader, settings, or AI.
-
-Today it mainly contains readable app errors.
-
-## `lib/settings/`
-
-### Put here later
-
-- Font size and font family choices.
-- Theme and color choices.
-- Reader spacing and layout choices.
-- Reading mode.
-- AI provider choice, but not secret keys.
-
-### Do not put here
-
-- The actual reading screen.
-- SQLite or secure-storage commands.
-- AI requests.
-
-This folder is currently empty.
-
-## `lib/intelligence/`
-
-### Put here later
-
-- AI provider support.
-- Word and passage explanations.
-- Book chat.
-- Chapter summaries.
-- Translation.
-- Building book text sent to AI.
-- Saving or reusing generated answers.
-
-### Do not put here
-
-- Basic EPUB import.
-- Basic local reading.
-- Normal reader layout.
-- Secret-key storage code.
-
-This folder is currently empty. If AI fails or is not configured, local books
-must still work.
-
-## How the folders work together
-
-### Importing
+## Project structure
 
 ```text
-app/ starts the import
-  -> platform/ opens the Android file picker
-  -> books/ checks and converts the EPUB
-  -> platform/ saves files and book data
-  -> app/ refreshes the library
+lib/
+├── main.dart
+├── data/
+│   ├── models/
+│   ├── repositories/
+│   └── services/
+├── domain/
+│   ├── models/
+│   ├── repositories/
+│   └── use_cases/
+└── ui/
+    ├── app/
+    ├── core/
+    └── features/
+        ├── library/
+        │   ├── view_models/
+        │   └── views/
+        └── reader/
+            ├── view_models/
+            └── views/
 ```
+
+Do not add another top-level application folder without approval.
+
+## Layer responsibilities
+
+### Domain
+
+The domain contains Flutter-independent application concepts and rules:
+
+- Canonical books, chapters, content blocks, assets, and navigation entries.
+- Stable identifiers, text anchors, selections, and reading positions.
+- Reader settings and temporary pagination boundaries.
+- Repository and platform-port interfaces.
+- Import, removal, language detection, pagination, and segmentation use cases.
+- Typed application failures.
+
+Domain code must not import Flutter, data implementations, SQLite, file-system
+classes, or platform plugins.
+
+### Data
+
+The data layer implements domain ports and owns external integrations:
+
+- SQLite database and repository implementations.
+- Local EPUB and asset file storage.
+- File-picker and ML Kit adapters.
+- EPUB ZIP, XML, and HTML parsing.
+- Serialization required by persistence.
+
+Data may depend on domain. It must not import UI code. Repositories translate
+integration failures into domain failures and return domain models.
+
+### UI
+
+The UI layer uses MVVM:
+
+- Views render state, collect user input, show navigation and transient UI, and
+  forward commands to ViewModels.
+- ViewModels extend `ChangeNotifier`, expose immutable snapshots or read-only
+  values, and depend only on domain interfaces and use cases.
+- `ui/core` contains shared presentation concerns such as reader themes.
+- `ui/app` contains the root widget and presentation dependency aggregate.
+
+Feature views must not import concrete data implementations.
+
+## Dependency wiring
+
+`main.dart` is the composition root and the only normal location that imports
+both concrete data implementations and UI. It creates services, repositories,
+and use cases, then passes domain-facing dependencies to `FlowReadingApp`.
+
+Use manual constructor injection. Do not add a service locator or state
+management package unless a task explicitly requires one.
+
+```text
+main
+  → data services and repository implementations
+  → domain repository interfaces and use cases
+  → UI ViewModels
+  → UI views
+```
+
+## Feature flows
+
+### EPUB import
+
+```text
+LibraryView
+  → LibraryViewModel
+  → ImportBookUseCase
+  → EpubContentParser + BookFileStorage + BookRepository
+  → concrete data services and repositories
+```
+
+Parsing runs outside the UI isolate. Cancellation or failure rolls back staged
+files, and a database failure after file promotion removes the promoted book.
 
 ### Reading
 
 ```text
-app/ opens a book
-  -> reader/ asks for chapters and reading position
-  -> platform/ loads them from SQLite
-  -> reader/ displays the content
-  -> platform/ saves the new reading position
+ReaderView
+  → ReaderViewModel
+  → domain repositories
+  → SQLite repository implementations
 ```
 
-## Current project scope
+The ViewModel loads canonical chapters, settings, position, and table of
+contents; serializes position writes; resolves stable navigation targets; and
+preserves logical position during repagination. Flutter-specific measurement
+stays in reader presentation code, while pagination rules stay in the domain.
 
-Finished or working now:
+## Persistence invariants
 
-- EPUB checking and importing.
-- Local EPUB, image, and SQLite storage.
-- Library list with cover, title, author, progress, and last-opened time.
-- Confirmed full-book removal with staged filesystem rollback.
-- Offline library search and sorting.
-- Android file selection.
-- Basic local chapter reading and saved position.
+- SQLite is the local source of truth.
+- Existing table and JSON formats remain backward-compatible.
+- Canonical content and logical positions are persisted.
+- Temporary pages and page indexes are never permanent book data.
+- Stable identifiers and UTF-16 text offsets must not be replaced by UI state.
 
-Partial or not started:
+## Adding a feature
 
-- Proper reading pages are not started.
-- Highlights, notes, bookmarks, and reader settings are not started.
-- AI and translation are not started.
-- Online synchronization is intentionally postponed.
-
-## Simple placement rule
-
-- Book import or book content: `books/`
-- Reading interaction: `reader/`
-- Phone, SQLite, files, or plugins: `platform/`
-- Starting features or changing screens: `app/`
-- Preferences: `settings/`
-- AI or translation: `intelligence/`
-- Small pieces truly shared by several folders: `shared/`
-
-Do not add another top-level folder without approval.
+1. Define or reuse immutable domain models.
+2. Add domain repository ports for external operations.
+3. Implement data services and repositories.
+4. Add a use case only for complex or reused business logic.
+5. Add a `ChangeNotifier` ViewModel with constructor-injected domain
+   dependencies.
+6. Build lean views with `ListenableBuilder`.
+7. Wire dependencies in `main.dart` and `ui/app`.
+8. Add domain, data, ViewModel, widget, and architecture tests as applicable.
