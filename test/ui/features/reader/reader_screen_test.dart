@@ -1,22 +1,32 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:flow_reading/domain/models/ai_cache_entry.dart';
+import 'package:flow_reading/domain/models/ai_provider_models.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/book_search.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
+import 'package:flow_reading/domain/repositories/ai_artifact_repository.dart';
+import 'package:flow_reading/domain/repositories/ai_credential_repository.dart';
+import 'package:flow_reading/domain/repositories/ai_provider.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/repositories/book_search_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:flow_reading/domain/repositories/table_of_contents_repository.dart';
+import 'package:flow_reading/domain/use_cases/build_ai_context.dart';
+import 'package:flow_reading/domain/use_cases/generate_word_explanation.dart';
 import 'package:flow_reading/domain/use_cases/paginate_chapter.dart';
 import 'package:flow_reading/ui/features/reader/view_models/flutter_content_measurer.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_selection.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
+import 'package:flow_reading/ui/features/reader/view_models/word_explanation_view_model.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_action_menu.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_screen.dart';
 import 'package:flow_reading/ui/features/reader/views/swipeable_reader.dart';
+import 'package:flow_reading/ui/features/reader/views/word_explanation_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -361,6 +371,90 @@ void main() {
     expect(find.byKey(const ValueKey('reader-selected-word')), findsOneWidget);
     expect(positions.last, same(positionBeforeAction));
   });
+
+  testWidgets(
+    'Define sheet stays expanded through loading, taps, drags, and result',
+    (tester) async {
+      final positions = _PositionRepository();
+      final provider = _DelayedAiProvider();
+      final artifacts = _AiArtifacts();
+      await _pumpReader(
+        tester,
+        books: _BookRepository(),
+        positions: positions,
+        createWordExplanationViewModel:
+            ({
+              required chapters,
+              required selection,
+              required currentPosition,
+            }) => WordExplanationViewModel(
+              generate: GenerateWordExplanationUseCase(
+                contextBuilder: BuildAiContextUseCase(
+                  searchRepository: _SearchRepository(),
+                ),
+                artifactRepository: artifacts,
+                credentialRepository: const _AiCredentials(),
+                provider: provider,
+                model: 'gpt-5.6-luna',
+              ),
+              chapters: chapters,
+              selection: selection,
+              currentPosition: currentPosition,
+            ),
+      );
+      final positionBeforeDefine = positions.saved.last.locator.anchor.id;
+
+      final renderedText = find.text('Read locally.', findRichText: true);
+      await tester.tapAt(
+        tester.getTopLeft(renderedText) + const Offset(15, 12),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('reader-action-define')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final sheet = find.byKey(const ValueKey('word-explanation-sheet'));
+      expect(sheet, findsOneWidget);
+      expect(find.text('Đang đọc câu chứa từ…'), findsOneWidget);
+      final initialRect = tester.getRect(sheet);
+      final screenHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(
+        initialRect.height,
+        closeTo(
+          screenHeight * WordExplanationSheet.heightFactor,
+          screenHeight * 0.05,
+        ),
+      );
+
+      await tester.tap(find.text('“Read”'));
+      await tester.pump();
+      expect(tester.getRect(sheet), initialRect);
+
+      await tester.drag(sheet, const Offset(0, 120));
+      await tester.pump();
+      expect(tester.getRect(sheet), initialRect);
+      expect(sheet, findsOneWidget);
+
+      provider.completeResponse({
+        'description': 'Động từ mô tả hành động đọc chữ viết.',
+        'contextualMeaning': 'Trong câu này, “Read” có nghĩa là đọc nội dung.',
+        'examples': ['Read this chapter.', 'I read before bed.'],
+      });
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(sheet), initialRect);
+      expect(find.text('Mô tả từ'), findsOneWidget);
+      expect(find.text('Nghĩa trong ngữ cảnh'), findsOneWidget);
+      expect(find.text('Ví dụ'), findsOneWidget);
+      expect(positions.saved.last.locator.anchor.id, positionBeforeDefine);
+      expect(find.text('Read locally.', findRichText: true), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Đóng phần giải nghĩa'));
+      await tester.pumpAndSettle();
+      expect(sheet, findsNothing);
+    },
+  );
 
   testWidgets('long press creates an adjustable stable passage range', (
     tester,
@@ -897,11 +991,13 @@ Future<void> _pumpReader(
   _SettingsRepository? settings,
   TableOfContentsRepository? tableOfContents,
   BookSearchRepository? search,
+  CreateWordExplanationViewModel? createWordExplanationViewModel,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       home: ReaderScreen(
         key: UniqueKey(),
+        createWordExplanationViewModel: createWordExplanationViewModel,
         viewModel: ReaderViewModel(
           book: BookSummary(
             id: 'book-id',
@@ -919,6 +1015,65 @@ Future<void> _pumpReader(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+final class _AiArtifacts implements AiArtifactRepository {
+  final entries = <String, AiCacheEntry>{};
+
+  @override
+  Future<AiCacheEntry?> read(String cacheId) async => entries[cacheId];
+
+  @override
+  Future<void> save(AiCacheEntry entry) async => entries[entry.id] = entry;
+}
+
+final class _AiCredentials implements AiCredentialRepository {
+  const _AiCredentials();
+
+  @override
+  Future<bool> contains(String providerId) async => true;
+
+  @override
+  Future<void> delete(String providerId) async {}
+
+  @override
+  Future<String?> read(String providerId) async => 'test-key';
+
+  @override
+  Future<void> write({
+    required String providerId,
+    required String apiKey,
+  }) async {}
+}
+
+final class _DelayedAiProvider implements AiProvider {
+  final _response = Completer<String>();
+
+  @override
+  String get id => 'openai';
+
+  void completeResponse(Map<String, Object?> response) {
+    _response.complete(jsonEncode(response));
+  }
+
+  @override
+  Future<AiCompletion> complete({
+    required String apiKey,
+    required AiProviderRequest request,
+  }) async => AiCompletion(
+    text: await _response.future,
+    providerId: id,
+    model: request.model,
+  );
+
+  @override
+  AiStreamOperation stream({
+    required String apiKey,
+    required AiProviderRequest request,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> validateKey(String apiKey) async {}
 }
 
 final class _SearchRepository implements BookSearchRepository {

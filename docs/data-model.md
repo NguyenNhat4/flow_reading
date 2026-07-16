@@ -301,8 +301,10 @@ languages and replaces the earlier, broader English response shape.
 `GenerateWordExplanationUseCase` builds context from the stable word range and
 its containing sentence, checks the compatible artifact cache before reading a
 credential, and stores only a successfully parsed response. The reader displays
-the result in a modal sheet, so opening or closing it does not navigate away
-from the book or change the logical reading position.
+the result in a non-draggable modal sheet fixed at roughly 70% of the viewport,
+so taps, small drags, and asynchronous state changes cannot collapse it.
+Opening or closing the sheet does not navigate away from the book or change the
+logical reading position.
 
 AI settings expose provider and model metadata but never read a stored key back
 into the UI. A new key is validated before it replaces the securely stored key.

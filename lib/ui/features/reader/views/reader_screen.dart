@@ -152,12 +152,17 @@ class _ReaderScreenState extends State<ReaderScreen>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => WordExplanationSheet(
-        viewModel: createViewModel(
-          chapters: widget.viewModel.chapters,
-          selection: selection,
-          currentPosition: currentPosition,
+      enableDrag: false,
+      showDragHandle: false,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: WordExplanationSheet.heightFactor,
+        alignment: Alignment.bottomCenter,
+        child: WordExplanationSheet(
+          viewModel: createViewModel(
+            chapters: widget.viewModel.chapters,
+            selection: selection,
+            currentPosition: currentPosition,
+          ),
         ),
       ),
     );

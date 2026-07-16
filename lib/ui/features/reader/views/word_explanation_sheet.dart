@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 class WordExplanationSheet extends StatefulWidget {
   const WordExplanationSheet({required this.viewModel, super.key});
 
+  static const heightFactor = 0.7;
+
   final WordExplanationViewModel viewModel;
 
   @override
@@ -31,6 +33,7 @@ class _WordExplanationSheetState extends State<WordExplanationSheet> {
       builder: (context, _) {
         final viewModel = widget.viewModel;
         return SafeArea(
+          key: const ValueKey('word-explanation-sheet'),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: SingleChildScrollView(
