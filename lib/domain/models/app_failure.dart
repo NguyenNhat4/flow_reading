@@ -47,6 +47,12 @@ final class CredentialStorageFailure extends AppFailure {
   });
 }
 
+final class AiNotConfiguredFailure extends AppFailure {
+  const AiNotConfiguredFailure({
+    super.message = 'Add and validate an OpenAI API key in AI settings first.',
+  });
+}
+
 final class NetworkFailure extends AppFailure {
   const NetworkFailure({
     super.message = 'A network connection could not be established.',

@@ -3,20 +3,27 @@ import 'dart:async';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/ui/core/reader_theme.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
+import 'package:flow_reading/ui/features/reader/view_models/word_explanation_view_model.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_layout_controls.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_action_menu.dart';
 import 'package:flow_reading/ui/features/reader/views/saved_items_panel.dart';
 import 'package:flow_reading/ui/features/reader/views/search_panel.dart';
 import 'package:flow_reading/ui/features/reader/views/swipeable_reader.dart';
 import 'package:flow_reading/ui/features/reader/views/table_of_contents.dart';
+import 'package:flow_reading/ui/features/reader/views/word_explanation_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Displays a reader session whose state is owned by [ReaderViewModel].
 class ReaderScreen extends StatefulWidget {
-  const ReaderScreen({required this.viewModel, super.key});
+  const ReaderScreen({
+    required this.viewModel,
+    this.createWordExplanationViewModel,
+    super.key,
+  });
 
   final ReaderViewModel viewModel;
+  final CreateWordExplanationViewModel? createWordExplanationViewModel;
 
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
@@ -86,6 +93,10 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Future<void> _handleAction(ReaderActionRequest request) async {
+    if (request.action == ReaderAction.define) {
+      await _showWordExplanation(request);
+      return;
+    }
     if (request.action == ReaderAction.addNote) {
       await _editNote(request.anchor);
       return;
@@ -103,6 +114,35 @@ class _ReaderScreenState extends State<ReaderScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${request.action.label} requires internet access.'),
+      ),
+    );
+  }
+
+  Future<void> _showWordExplanation(ReaderActionRequest request) async {
+    final createViewModel = widget.createWordExplanationViewModel;
+    if (createViewModel == null || !mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Word explanation is unavailable.')),
+      );
+      return;
+    }
+    final selection = WordSelection(
+      anchor: request.anchor,
+      textSnapshot: request.textSnapshot,
+    );
+    final currentPosition =
+        widget.viewModel.locator ?? ReadingLocator(anchor: request.anchor);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => WordExplanationSheet(
+        viewModel: createViewModel(
+          chapters: widget.viewModel.chapters,
+          selection: selection,
+          currentPosition: currentPosition,
+        ),
       ),
     );
   }

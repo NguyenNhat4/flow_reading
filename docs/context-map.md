@@ -32,6 +32,7 @@ Do not read every linked document by default.
 | AI context building | AI context package in `docs/data-model.md`, `docs/invariants.md` | Context models, local search, context use case |
 | AI prompts and structured outputs | AI prompt templates in `docs/data-model.md`, relevant AI product requirement | Prompt models and registry |
 | Cached AI artifacts | Cached AI result in `docs/data-model.md`, `docs/invariants.md` | AI cache model/repository and database migration |
+| Contextual word explanation | Word explanation in `docs/data-model.md`, AI invariants, reader selection requirements | Word-explanation use case and ViewModel, reader sheet, AI settings |
 | Highlights, notes, bookmarks, AI, translation, or sync | `docs/invariants.md`, `docs/data-model.md`, relevant product requirement | Domain model/repository, data repository, reader UI |
 | Product clarification | Relevant requirement in `docs/product-plan.md` | Varies |
 

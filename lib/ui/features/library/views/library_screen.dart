@@ -4,6 +4,8 @@ import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/use_cases/import_book.dart';
 import 'package:flow_reading/ui/features/library/view_models/library_catalog.dart';
 import 'package:flow_reading/ui/features/library/view_models/library_view_model.dart';
+import 'package:flow_reading/ui/features/settings/view_models/ai_settings_view_model.dart';
+import 'package:flow_reading/ui/features/settings/views/ai_settings_sheet.dart';
 import 'package:flutter/material.dart';
 
 /// Displays the local book catalog using [LibraryViewModel] state.
@@ -11,11 +13,13 @@ class LibraryScreen extends StatefulWidget {
   const LibraryScreen({
     required this.viewModel,
     required this.onOpenBook,
+    this.createAiSettingsViewModel,
     super.key,
   });
 
   final LibraryViewModel viewModel;
   final Future<void> Function(BookSummary book) onOpenBook;
+  final AiSettingsViewModel Function()? createAiSettingsViewModel;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -121,6 +125,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (mounted) await widget.viewModel.load();
   }
 
+  Future<void> _showAiSettings() async {
+    final createViewModel = widget.createAiSettingsViewModel;
+    if (createViewModel == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => AiSettingsSheet(viewModel: createViewModel()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -128,7 +143,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
       builder: (context, _) {
         final viewModel = widget.viewModel;
         return Scaffold(
-          appBar: AppBar(title: const Text('Flow Reading')),
+          appBar: AppBar(
+            title: const Text('Flow Reading'),
+            actions: [
+              if (widget.createAiSettingsViewModel != null)
+                IconButton(
+                  tooltip: 'AI settings',
+                  onPressed: _showAiSettings,
+                  icon: const Icon(Icons.auto_awesome_outlined),
+                ),
+            ],
+          ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: _importBook,
             icon: const Icon(Icons.add),

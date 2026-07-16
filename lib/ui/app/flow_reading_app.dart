@@ -37,6 +37,7 @@ class _LibraryBootstrap extends StatelessWidget {
           return LibraryScreen(
             viewModel: resolved.createLibraryViewModel(),
             onOpenBook: (book) => _openBook(context, resolved, book),
+            createAiSettingsViewModel: resolved.createAiSettingsViewModel,
           );
         }
         return Scaffold(
@@ -57,8 +58,11 @@ class _LibraryBootstrap extends StatelessWidget {
     BookSummary book,
   ) => Navigator.of(context).push<void>(
     MaterialPageRoute(
-      builder: (_) =>
-          ReaderScreen(viewModel: dependencies.createReaderViewModel(book)),
+      builder: (_) => ReaderScreen(
+        viewModel: dependencies.createReaderViewModel(book),
+        createWordExplanationViewModel:
+            dependencies.createWordExplanationViewModel,
+      ),
     ),
   );
 }

@@ -125,6 +125,8 @@ Cache:
 
 ## TASK-507 — Add word explanation
 
+**Status:** Complete
+
 **Priority:** P1
 
 Return:
