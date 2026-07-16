@@ -65,6 +65,8 @@ Implement:
 
 ## TASK-304 — Save logical reading position
 
+**Status:** Complete
+
 **Priority:** P0
 
 Save position using:

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flow_reading/books/book_models.dart';
 import 'package:flow_reading/books/book_repository.dart';
 import 'package:flow_reading/books/text_anchors.dart';
@@ -75,7 +77,12 @@ void main() {
 
     expect(find.text('Read locally.', findRichText: true), findsOneWidget);
     expect(find.text('First chapter · Page 1 of 2'), findsOneWidget);
-    expect(positions.saved.last.locator.anchor.blockId, 'block-1');
+    final initialPosition = positions.saved.last;
+    expect(initialPosition.bookId, 'book-id');
+    expect(initialPosition.locator.anchor.chapterId, 'chapter-1');
+    expect(initialPosition.locator.anchor.blockId, 'block-1');
+    expect(initialPosition.locator.anchor.startOffset, 0);
+    expect(initialPosition.updatedAt.isUtc, isTrue);
 
     await _swipePrevious(tester);
     expect(find.text('First chapter · Page 1 of 2'), findsOneWidget);
@@ -217,6 +224,74 @@ void main() {
     expect(find.textContaining('Page 1 of '), findsNothing);
   });
 
+  testWidgets('saves the latest logical position when app backgrounds', (
+    tester,
+  ) async {
+    final positions = _PositionRepository();
+    await _pumpReader(tester, books: _BookRepository(), positions: positions);
+    await _swipeNext(tester);
+    final savesBeforeBackground = positions.saved.length;
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+
+    expect(positions.saved, hasLength(savesBeforeBackground + 1));
+    final saved = positions.saved.last;
+    expect(saved.bookId, 'book-id');
+    expect(saved.locator.anchor.chapterId, 'chapter-2');
+    expect(saved.locator.anchor.blockId, 'block-2');
+    expect(saved.locator.anchor.startOffset, 0);
+    expect(saved.updatedAt.isUtc, isTrue);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  });
+
+  testWidgets('waits for the final position save before closing the book', (
+    tester,
+  ) async {
+    final positions = _PositionRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: FilledButton(
+                onPressed: () {
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => ReaderScreen(
+                        book: _bookSummary,
+                        bookRepository: _BookRepository(),
+                        positionRepository: positions,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Open book'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open book'));
+    await tester.pumpAndSettle();
+    final finalSave = Completer<void>();
+    positions.blockNextSave = finalSave;
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pump();
+
+    expect(find.text('Local Book'), findsOneWidget);
+    expect(finalSave.isCompleted, isFalse);
+
+    finalSave.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open book'), findsOneWidget);
+    expect(find.text('Local Book'), findsNothing);
+  });
+
   testWidgets('renders mixed canonical fragments inside paginated pages', (
     tester,
   ) async {
@@ -318,12 +393,19 @@ Future<void> _swipePrevious(WidgetTester tester) async {
 }
 
 final _importedAt = DateTime.utc(2026);
+final _bookSummary = BookSummary(
+  id: 'book-id',
+  title: 'Local Book',
+  authors: const ['Writer'],
+  importedAt: _importedAt,
+);
 
 final class _PositionRepository implements ReadingPositionRepository {
   _PositionRepository({this.initial});
 
   final ReadingPosition? initial;
   final List<ReadingPosition> saved = [];
+  Completer<void>? blockNextSave;
 
   @override
   Future<ReadingPosition?> load(String bookId) async => initial;
@@ -331,6 +413,9 @@ final class _PositionRepository implements ReadingPositionRepository {
   @override
   Future<void> save(ReadingPosition position) async {
     saved.add(position);
+    final blocker = blockNextSave;
+    blockNextSave = null;
+    await blocker?.future;
   }
 }
 

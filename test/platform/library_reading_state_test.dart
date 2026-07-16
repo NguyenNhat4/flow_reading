@@ -60,8 +60,15 @@ void main() {
 
     final restored = await positions.load('book-id');
     final summary = (await books.listBooks()).single;
+    expect(restored?.bookId, 'book-id');
+    expect(restored?.locator.anchor.bookId, 'book-id');
+    expect(restored?.locator.anchor.chapterId, 'chapter-2');
+    expect(restored?.locator.anchor.blockId, 'block-2');
+    expect(restored?.locator.anchor.startOffset, 0);
+    expect(restored?.locator.anchor.endOffset, 0);
     expect(restored?.locator.anchor.id, position.locator.anchor.id);
     expect(restored?.updatedAt, updatedAt);
+    expect(restored?.updatedAt.isUtc, isTrue);
     expect(summary.readingProgress, 0.5);
     expect(summary.lastOpenedAt?.toUtc(), updatedAt);
   });

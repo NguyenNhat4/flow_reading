@@ -215,6 +215,14 @@ fit the viewport so pagination remains practical for long chapters. Only the
 settled page's stable start anchor is sent to reading-position persistence;
 temporary page numbers remain presentation state.
 
+Reading-position writes are serialized so an older asynchronous save cannot
+overwrite a newer locator. The reader starts a save immediately when the app
+becomes inactive, pauses, or detaches, and awaits a final save before a normal
+route close. Disposal retains a non-blocking fallback for removal outside route
+navigation. Reopening loads the stored `bookId`, chapter and block IDs, UTF-16
+character offset, and UTC update time, then selects the temporary page containing
+that logical locator.
+
 ## Implementation order
 
 ```text
