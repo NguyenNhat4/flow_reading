@@ -55,7 +55,9 @@ void main() {
     await _pumpReader(tester, settings: settings, positions: positions);
     final savesBeforeThemeChange = positions.saved.length;
 
-    await tester.tap(find.byTooltip('Reader layout'));
+    await tester.tap(find.byTooltip('More reader actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reader layout'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Paper'));
     await tester.pump();

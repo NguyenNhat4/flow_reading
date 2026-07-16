@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/ui/core/reader_theme.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_layout_controls.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_action_menu.dart';
+import 'package:flow_reading/ui/features/reader/views/saved_items_panel.dart';
 import 'package:flow_reading/ui/features/reader/views/swipeable_reader.dart';
 import 'package:flow_reading/ui/features/reader/views/table_of_contents.dart';
 import 'package:flutter/material.dart';
@@ -83,6 +85,10 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Future<void> _handleAction(ReaderActionRequest request) async {
+    if (request.action == ReaderAction.addNote) {
+      await _editNote(request.anchor);
+      return;
+    }
     if (request.action == ReaderAction.highlight) {
       final saved = await widget.viewModel.toggleHighlight(request.anchor);
       if (!saved && mounted) {
@@ -98,6 +104,64 @@ class _ReaderScreenState extends State<ReaderScreen>
         content: Text('${request.action.label} requires internet access.'),
       ),
     );
+  }
+
+  Future<void> _editNote(TextAnchor range) async {
+    final existing = widget.viewModel.noteFor(range);
+    final controller = TextEditingController(text: existing?.body);
+    final body = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(existing == null ? 'Add note' : 'Edit note'),
+        content: TextField(
+          key: const ValueKey('reader-note-field'),
+          controller: controller,
+          autofocus: true,
+          minLines: 3,
+          maxLines: 8,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(hintText: 'Write a note'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (body == null || body.trim().isEmpty || !mounted) return;
+    final saved = await widget.viewModel.saveNote(range, body);
+    if (!saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The note could not be saved.')),
+      );
+    }
+  }
+
+  Future<void> _showSavedItems() async {
+    final anchor = await showModalBottomSheet<TextAnchor>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => ReaderSavedItemsPanel(
+        viewModel: widget.viewModel,
+        onOpenNote: (note) => Navigator.of(sheetContext).pop(note.range),
+        onEditNote: (note) => _editNote(note.range),
+        onDeleteNote: (note) => widget.viewModel.deleteNote(note.id),
+      ),
+    );
+    if (anchor == null || !mounted) return;
+    if (!widget.viewModel.navigateToAnchor(anchor)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This note passage could not be opened.')),
+      );
+    }
   }
 
   @override
@@ -140,9 +204,27 @@ class _ReaderScreenState extends State<ReaderScreen>
                       icon: const Icon(Icons.list_alt),
                     ),
                     IconButton(
-                      tooltip: 'Reader layout',
-                      onPressed: viewModel.isLoaded ? _changeLayout : null,
-                      icon: const Icon(Icons.text_fields),
+                      tooltip: 'Saved items',
+                      onPressed: viewModel.isLoaded ? _showSavedItems : null,
+                      icon: const Icon(Icons.collections_bookmark_outlined),
+                    ),
+                    PopupMenuButton<_ReaderMenuAction>(
+                      tooltip: 'More reader actions',
+                      enabled: viewModel.isLoaded,
+                      onSelected: (action) {
+                        if (action == _ReaderMenuAction.layout) {
+                          _changeLayout();
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: _ReaderMenuAction.layout,
+                          child: ListTile(
+                            leading: Icon(Icons.text_fields),
+                            title: Text('Reader layout'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -158,6 +240,8 @@ class _ReaderScreenState extends State<ReaderScreen>
     );
   }
 }
+
+enum _ReaderMenuAction { layout }
 
 class _ReaderBody extends StatelessWidget {
   const _ReaderBody({required this.viewModel, required this.onActionSelected});

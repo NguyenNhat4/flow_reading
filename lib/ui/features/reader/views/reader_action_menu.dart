@@ -14,6 +14,7 @@ enum ReaderAction {
   explain,
   summarize,
   explainGrammar,
+  addNote,
   highlight,
   copy,
 }
@@ -53,6 +54,7 @@ const passageReaderActions = <ReaderAction>[
   ReaderAction.translate,
   ReaderAction.summarize,
   ReaderAction.explainGrammar,
+  ReaderAction.addNote,
   ReaderAction.highlight,
   ReaderAction.copy,
 ];
@@ -66,13 +68,16 @@ extension ReaderActionPresentation on ReaderAction {
     ReaderAction.explain => 'Explain',
     ReaderAction.summarize => 'Summarize',
     ReaderAction.explainGrammar => 'Explain Grammar',
+    ReaderAction.addNote => 'Add note',
     ReaderAction.highlight => 'Highlight',
     ReaderAction.copy => 'Copy',
   };
 
   /// Whether this action requires network access when opened.
   bool get requiresInternet => switch (this) {
-    ReaderAction.highlight || ReaderAction.copy => false,
+    ReaderAction.addNote ||
+    ReaderAction.highlight ||
+    ReaderAction.copy => false,
     _ => true,
   };
 }

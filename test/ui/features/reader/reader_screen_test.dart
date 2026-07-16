@@ -116,10 +116,12 @@ void main() {
       'Translate',
       'Summarize',
       'Explain Grammar',
+      'Add note',
       'Highlight',
       'Copy',
     ]);
     expect(ReaderAction.highlight.requiresInternet, isFalse);
+    expect(ReaderAction.addNote.requiresInternet, isFalse);
     expect(ReaderAction.copy.requiresInternet, isFalse);
     expect(
       ReaderAction.values
@@ -446,6 +448,7 @@ void main() {
     expect(find.text('Translate · Online'), findsOneWidget);
     expect(find.text('Summarize · Online'), findsOneWidget);
     expect(find.text('Explain Grammar · Online'), findsOneWidget);
+    expect(find.text('Add note'), findsOneWidget);
     expect(find.text('Highlight'), findsOneWidget);
     expect(find.text('Copy'), findsOneWidget);
     expect(find.text('Define · Online'), findsNothing);
@@ -724,7 +727,9 @@ void main() {
     final before = positions.saved.last.locator.anchor;
     expect(before.startOffset, greaterThan(0));
 
-    await tester.tap(find.byTooltip('Reader layout'));
+    await tester.tap(find.byTooltip('More reader actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reader layout'));
     await tester.pumpAndSettle();
     await tester.drag(
       find.byKey(const ValueKey('reader-font-size-slider')),

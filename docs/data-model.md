@@ -215,6 +215,13 @@ range can remove it. Highlight paint is temporary reader presentation state:
 font changes, viewport changes, and repagination never rewrite the stored
 range.
 
+Notes use the dedicated `notes` table. Their IDs also come from the exact
+canonical range, so saving another note for that range edits the existing note
+while preserving its creation time. Passage previews are derived from stored
+canonical chapter content instead of being duplicated in note rows. Opening a
+note converts the range start into a collapsed reading locator and repaginates
+to the containing page.
+
 ### Translation
 
 `Translation`

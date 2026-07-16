@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/highlight.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
+import 'package:flow_reading/domain/models/reader_note.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/repositories/highlight_repository.dart';
+import 'package:flow_reading/domain/repositories/note_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:flow_reading/domain/repositories/table_of_contents_repository.dart';
@@ -20,6 +22,7 @@ final class ReaderViewModel extends ChangeNotifier {
     required ReadingPositionRepository positionRepository,
     required ReaderSettingsRepository settingsRepository,
     HighlightRepository? highlightRepository,
+    NoteRepository? noteRepository,
     TableOfContentsRepository? tableOfContentsRepository,
   }) => ReaderViewModel._(
     book,
@@ -27,6 +30,7 @@ final class ReaderViewModel extends ChangeNotifier {
     positionRepository,
     settingsRepository,
     highlightRepository,
+    noteRepository,
     tableOfContentsRepository,
   );
 
@@ -36,6 +40,7 @@ final class ReaderViewModel extends ChangeNotifier {
     this._positionRepository,
     this._settingsRepository,
     this._highlightRepository,
+    this._noteRepository,
     this._tableOfContentsRepository,
   );
 
@@ -44,6 +49,7 @@ final class ReaderViewModel extends ChangeNotifier {
   final ReadingPositionRepository _positionRepository;
   final ReaderSettingsRepository _settingsRepository;
   final HighlightRepository? _highlightRepository;
+  final NoteRepository? _noteRepository;
   final TableOfContentsRepository? _tableOfContentsRepository;
 
   Future<void>? _loading;
@@ -53,7 +59,9 @@ final class ReaderViewModel extends ChangeNotifier {
   List<Chapter> _chapters = const [];
   List<TableOfContentsEntry> _tableOfContents = const [];
   List<Highlight> _highlights = const [];
+  List<ReaderNote> _notes = const [];
   Object? _highlightLoadError;
+  Object? _noteLoadError;
   Object? _loadError;
   int _readerGeneration = 0;
   bool _loaded = false;
@@ -64,7 +72,9 @@ final class ReaderViewModel extends ChangeNotifier {
   List<Chapter> get chapters => _chapters;
   List<TableOfContentsEntry> get tableOfContents => _tableOfContents;
   List<Highlight> get highlights => _highlights;
+  List<ReaderNote> get notes => _notes;
   Object? get highlightLoadError => _highlightLoadError;
+  Object? get noteLoadError => _noteLoadError;
   Object? get loadError => _loadError;
   int get readerGeneration => _readerGeneration;
   bool get isLoaded => _loaded;
@@ -94,6 +104,14 @@ final class ReaderViewModel extends ChangeNotifier {
           );
         } catch (error) {
           _highlightLoadError = error;
+        }
+      }
+      final noteRepository = _noteRepository;
+      if (noteRepository != null) {
+        try {
+          _notes = List.unmodifiable(await noteRepository.listForBook(book.id));
+        } catch (error) {
+          _noteLoadError = error;
         }
       }
     } catch (error) {
@@ -142,6 +160,99 @@ final class ReaderViewModel extends ChangeNotifier {
     }
   }
 
+  ReaderNote? noteFor(TextAnchor range) =>
+      _notes.where((note) => note.id == range.id).firstOrNull;
+
+  Future<bool> saveNote(TextAnchor range, String body) async {
+    final repository = _noteRepository;
+    if (repository == null || range.bookId != book.id) return false;
+    final existing = noteFor(range);
+    try {
+      final now = DateTime.now().toUtc();
+      final note = ReaderNote(
+        range: range,
+        body: body,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      );
+      await repository.save(note);
+      _notes = List.unmodifiable([
+        note,
+        ..._notes.where((candidate) => candidate.id != note.id),
+      ]);
+      _notify();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteNote(String noteId) async {
+    final repository = _noteRepository;
+    if (repository == null) return false;
+    try {
+      await repository.delete(noteId);
+      _notes = List.unmodifiable(_notes.where((note) => note.id != noteId));
+      _notify();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool navigateToAnchor(TextAnchor anchor) {
+    if (anchor.bookId != book.id) return false;
+    final chapter = _chapters
+        .where((candidate) => candidate.id == anchor.chapterId)
+        .firstOrNull;
+    if (chapter == null) return false;
+    final block = chapter.blocks
+        .where((candidate) => candidate.id == anchor.blockId)
+        .firstOrNull;
+    if (block == null) return false;
+    final extent = _canonicalText(block).length;
+    if (anchor.startOffset < 0 ||
+        anchor.endOffset < anchor.startOffset ||
+        anchor.endOffset > extent) {
+      return false;
+    }
+    _locator = ReadingLocator(
+      anchor: TextAnchor(
+        bookId: anchor.bookId,
+        chapterId: anchor.chapterId,
+        blockId: anchor.blockId,
+        startOffset: anchor.startOffset,
+        endOffset: anchor.startOffset,
+      ),
+    );
+    _readerGeneration++;
+    _notify();
+    unawaited(savePosition().catchError((Object _) {}));
+    return true;
+  }
+
+  String chapterTitleFor(TextAnchor anchor) =>
+      _chapters
+          .where((chapter) => chapter.id == anchor.chapterId)
+          .map((chapter) => chapter.title)
+          .firstOrNull ??
+      'Unknown chapter';
+
+  String passagePreview(TextAnchor anchor) {
+    final block = _chapters
+        .expand((chapter) => chapter.blocks)
+        .where((candidate) => candidate.id == anchor.blockId)
+        .firstOrNull;
+    if (block == null) return 'Passage unavailable';
+    final text = _canonicalText(block);
+    if (text.isEmpty) return 'Passage unavailable';
+    final start = anchor.startOffset.clamp(0, text.length);
+    final end = anchor.endOffset.clamp(start, text.length);
+    final preview = text.substring(start, end).replaceAll(RegExp(r'\s+'), ' ');
+    if (preview.isEmpty) return 'Passage unavailable';
+    return preview.length <= 120 ? preview : '${preview.substring(0, 117)}…';
+  }
+
   Future<void> savePosition() {
     final locator = _locator;
     if (locator == null) return Future<void>.value();
@@ -184,8 +295,8 @@ final class ReaderViewModel extends ChangeNotifier {
         : blocks.where((block) => block.id == requestedBlockId).toList();
     if (requestedBlockId != null && matchingBlocks.isEmpty) return false;
     final block = matchingBlocks.isEmpty ? blocks.first : matchingBlocks.single;
-    _locator = ReadingLocator(
-      anchor: TextAnchor(
+    return navigateToAnchor(
+      TextAnchor(
         bookId: book.id,
         chapterId: chapter.id,
         blockId: block.id,
@@ -193,10 +304,6 @@ final class ReaderViewModel extends ChangeNotifier {
         endOffset: 0,
       ),
     );
-    _readerGeneration++;
-    _notify();
-    unawaited(savePosition().catchError((Object _) {}));
-    return true;
   }
 
   void saveForLifecycleChange() {
@@ -213,3 +320,14 @@ final class ReaderViewModel extends ChangeNotifier {
     super.dispose();
   }
 }
+
+String _canonicalText(ContentBlock block) => switch (block) {
+  ParagraphBlock() => block.text,
+  HeadingBlock() => block.text,
+  QuoteBlock() => block.text,
+  ListBlock() => block.items.map(_listItemText).join('\n'),
+  ImageBlock() => '\uFFFC',
+};
+
+String _listItemText(BookListItem item) =>
+    [item.text, ...item.children.map(_listItemText)].join('\n');

@@ -17,6 +17,8 @@
 
 ## TASK-402 — Implement notes
 
+**Status:** Complete
+
 **Priority:** P2
 
 **Acceptance criteria:**

@@ -1,10 +1,12 @@
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/highlight.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
+import 'package:flow_reading/domain/models/reader_note.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/repositories/highlight_repository.dart';
+import 'package:flow_reading/domain/repositories/note_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:flow_reading/domain/repositories/table_of_contents_repository.dart';
@@ -76,17 +78,53 @@ void main() {
     expect(viewModel.chapters, isNotEmpty);
     viewModel.dispose();
   });
+
+  test('creates, edits, deletes, previews, and navigates to notes', () async {
+    final notes = _NoteRepository();
+    final positions = _PositionRepository();
+    final viewModel = _viewModel(notes: notes, positions: positions);
+    await viewModel.load();
+    final range = TextAnchor(
+      bookId: 'book',
+      chapterId: 'chapter',
+      blockId: 'block',
+      startOffset: 0,
+      endOffset: 4,
+    );
+
+    expect(await viewModel.saveNote(range, ' First note '), isTrue);
+    expect(viewModel.notes.single.body, 'First note');
+    expect(viewModel.passagePreview(range), 'Text');
+    expect(viewModel.chapterTitleFor(range), 'Chapter');
+
+    final createdAt = viewModel.notes.single.createdAt;
+    expect(await viewModel.saveNote(range, 'Edited note'), isTrue);
+    expect(viewModel.notes.single.body, 'Edited note');
+    expect(viewModel.notes.single.createdAt, createdAt);
+
+    expect(viewModel.navigateToAnchor(range), isTrue);
+    await viewModel.savePosition();
+    expect(viewModel.locator?.anchor.startOffset, 0);
+    expect(positions.saved.last.locator.anchor.endOffset, 0);
+
+    expect(await viewModel.deleteNote(range.id), isTrue);
+    expect(viewModel.notes, isEmpty);
+    expect(notes.deleted, [range.id]);
+    viewModel.dispose();
+  });
 }
 
 ReaderViewModel _viewModel({
   _PositionRepository? positions,
   _HighlightRepository? highlights,
+  _NoteRepository? notes,
 }) => ReaderViewModel(
   book: _summary,
   bookRepository: _BookRepository(),
   positionRepository: positions ?? _PositionRepository(),
   settingsRepository: _SettingsRepository(),
   highlightRepository: highlights,
+  noteRepository: notes,
   tableOfContentsRepository: _TocRepository(),
 );
 
@@ -182,4 +220,23 @@ final class _HighlightRepository implements HighlightRepository {
 
   @override
   Future<void> save(Highlight highlight) async => saved.add(highlight);
+}
+
+final class _NoteRepository implements NoteRepository {
+  final List<ReaderNote> saved = [];
+  final List<String> deleted = [];
+
+  @override
+  Future<void> delete(String noteId) async => deleted.add(noteId);
+
+  @override
+  Future<List<ReaderNote>> listForBook(String bookId) async =>
+      List.unmodifiable(saved);
+
+  @override
+  Future<void> save(ReaderNote note) async {
+    saved
+      ..removeWhere((candidate) => candidate.id == note.id)
+      ..add(note);
+  }
 }
