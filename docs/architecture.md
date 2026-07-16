@@ -256,6 +256,17 @@ inward past display-only decorations and emitted as a half-open
 without depending on its temporary page. Cross-block ranges are not represented
 because stable range models intentionally identify one block.
 
+The reader action menu replaces the page indicator while a word or passage is
+selected and scrolls horizontally when its actions exceed the available width.
+Each action receives the selection kind, text snapshot, and original
+`TextAnchor`; opening it does not repaginate, advance the page, or clear the
+painted selection. Copy uses the platform clipboard and Highlight is dispatched
+without a connectivity requirement. Define, Explain, Ask AI, Translate,
+Summarize, and Explain Grammar are visibly marked Online and are dispatched
+through a reader callback so provider and annotation implementations remain
+outside the page-rendering widget. Missing or failed online workflows show a
+recoverable message without breaking local reading.
+
 ## Implementation order
 
 ```text

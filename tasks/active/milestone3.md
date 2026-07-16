@@ -176,6 +176,8 @@ Allow long-press selection of a sentence or passage.
 
 ## TASK-310 — Create reader action menu
 
+**Status:** Complete
+
 **Priority:** P1
 
 Word actions:

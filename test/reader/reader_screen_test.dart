@@ -5,12 +5,14 @@ import 'package:flow_reading/books/book_repository.dart';
 import 'package:flow_reading/books/text_anchors.dart';
 import 'package:flow_reading/reader/flutter_content_measurer.dart';
 import 'package:flow_reading/reader/pagination_engine.dart';
+import 'package:flow_reading/reader/reader_action_menu.dart';
 import 'package:flow_reading/reader/reader_screen.dart';
 import 'package:flow_reading/reader/reader_selection.dart';
 import 'package:flow_reading/reader/swipeable_reader.dart';
 import 'package:flow_reading/reader/table_of_contents.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -94,6 +96,40 @@ void main() {
     expect(passage?.textSnapshot, 'sentence. Second sentence');
     expect(passage?.anchor.startOffset, 6);
     expect(passage?.anchor.endOffset, 31);
+  });
+
+  test('reader actions expose the required order and connectivity', () {
+    expect(wordReaderActions.map((action) => action.label), [
+      'Define',
+      'Ask AI',
+      'Translate',
+      'Highlight',
+      'Copy',
+    ]);
+    expect(passageReaderActions.map((action) => action.label), [
+      'Explain',
+      'Ask AI',
+      'Translate',
+      'Summarize',
+      'Explain Grammar',
+      'Highlight',
+      'Copy',
+    ]);
+    expect(ReaderAction.highlight.requiresInternet, isFalse);
+    expect(ReaderAction.copy.requiresInternet, isFalse);
+    expect(
+      ReaderAction.values
+          .where((action) => action.requiresInternet)
+          .map((action) => action.label),
+      [
+        'Define',
+        'Ask AI',
+        'Translate',
+        'Explain',
+        'Summarize',
+        'Explain Grammar',
+      ],
+    );
   });
 
   test('pagination v2 reserves render slack and keeps anchors contiguous', () {
@@ -226,6 +262,98 @@ void main() {
     );
   });
 
+  testWidgets('word actions stay on the same position and copy offline', (
+    tester,
+  ) async {
+    final positions = <TextAnchor>[];
+    final requests = <ReaderActionRequest>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 320,
+          height: 400,
+          child: SwipeableReader(
+            chapters: [_chapters.first],
+            settings: ReaderSettings.defaults,
+            onPositionChanged: positions.add,
+            onActionSelected: requests.add,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final positionBeforeAction = positions.last;
+
+    final renderedText = find.text('Read locally.', findRichText: true);
+    await tester.tapAt(tester.getTopLeft(renderedText) + const Offset(15, 12));
+    await tester.pump();
+
+    expect(find.text('Define · Online'), findsOneWidget);
+    expect(find.text('Ask AI · Online'), findsOneWidget);
+    expect(find.text('Translate · Online'), findsOneWidget);
+    expect(find.text('Highlight'), findsOneWidget);
+    expect(find.text('Copy'), findsOneWidget);
+    expect(find.text('Explain · Online'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    final actionMenu = find.byKey(const ValueKey('reader-action-menu'));
+    final actionScrollable = find.descendant(
+      of: actionMenu,
+      matching: find.byType(Scrollable),
+    );
+    final highlightAction = find.byKey(
+      const ValueKey('reader-action-highlight'),
+    );
+    await tester.scrollUntilVisible(
+      highlightAction,
+      180,
+      scrollable: actionScrollable,
+    );
+    await tester.tap(highlightAction);
+    await tester.pump();
+
+    expect(requests.single.action, ReaderAction.highlight);
+    expect(requests.single.selectionKind, ReaderSelectionKind.word);
+    expect(requests.single.textSnapshot, 'Read');
+    expect(requests.single.anchor.bookId, 'book-id');
+    expect(requests.single.anchor.chapterId, 'chapter-1');
+    expect(requests.single.anchor.blockId, 'block-1');
+    expect(requests.single.anchor.startOffset, 0);
+    expect(requests.single.anchor.endOffset, 4);
+    expect(find.byKey(const ValueKey('reader-selected-word')), findsOneWidget);
+    expect(positions.last, same(positionBeforeAction));
+
+    MethodCall? clipboardCall;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        clipboardCall = call;
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    final copyAction = find.byKey(const ValueKey('reader-action-copy'));
+    await tester.scrollUntilVisible(
+      copyAction,
+      180,
+      scrollable: actionScrollable,
+    );
+    await tester.tap(copyAction);
+    await tester.pump();
+
+    expect(clipboardCall?.method, 'Clipboard.setData');
+    expect(clipboardCall?.arguments, {'text': 'Read'});
+    expect(requests.last.action, ReaderAction.copy);
+    expect(find.byKey(const ValueKey('reader-selected-word')), findsOneWidget);
+    expect(positions.last, same(positionBeforeAction));
+  });
+
   testWidgets('long press creates an adjustable stable passage range', (
     tester,
   ) async {
@@ -276,6 +404,61 @@ void main() {
     );
     expect(
       find.bySemanticsLabel(RegExp(r'Selected passage: First sentence')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('passage actions label online work and retain the range', (
+    tester,
+  ) async {
+    ReaderActionRequest? request;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 280,
+          height: 400,
+          child: SwipeableReader(
+            chapters: const [_passageChapter],
+            settings: ReaderSettings.defaults,
+            onPositionChanged: (_) {},
+            onActionSelected: (value) => request = value,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final renderedText = find.text(
+      'First sentence. Second sentence remains selectable.',
+      findRichText: true,
+    );
+    await tester.longPressAt(
+      tester.getTopLeft(renderedText) + const Offset(20, 12),
+    );
+    await tester.pump();
+
+    expect(find.text('Explain · Online'), findsOneWidget);
+    expect(find.text('Ask AI · Online'), findsOneWidget);
+    expect(find.text('Translate · Online'), findsOneWidget);
+    expect(find.text('Summarize · Online'), findsOneWidget);
+    expect(find.text('Explain Grammar · Online'), findsOneWidget);
+    expect(find.text('Highlight'), findsOneWidget);
+    expect(find.text('Copy'), findsOneWidget);
+    expect(find.text('Define · Online'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byKey(const ValueKey('reader-action-explain')));
+    await tester.pump();
+
+    expect(request?.action, ReaderAction.explain);
+    expect(request?.selectionKind, ReaderSelectionKind.passage);
+    expect(request?.textSnapshot, 'First');
+    expect(request?.anchor.chapterId, 'passage-chapter');
+    expect(request?.anchor.blockId, 'passage-block');
+    expect(request?.anchor.startOffset, 0);
+    expect(request?.anchor.endOffset, 5);
+    expect(
+      find.byKey(const ValueKey('reader-selected-passage')),
       findsOneWidget,
     );
   });

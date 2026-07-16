@@ -31,6 +31,7 @@ Do not read every linked document by default.
 | Local book removal          | Storage lifecycle and repository sections of `docs/epub-import.md` | `lib/books/`, `lib/platform/`, `lib/app/` |
 | Pagination                  | `docs/reader-pagination-layout.md`, pagination section of `docs/architecture.md`, derived data in `docs/data-model.md`, `docs/invariants.md` | `lib/reader/` |
 | Reading position            | `docs/invariants.md`, reader section of `docs/architecture.md`       | `lib/reader/`                      |
+| Reader selection and actions | `docs/invariants.md`, reader section of `docs/architecture.md`      | `lib/reader/`                      |
 | Highlights and notes        | `docs/invariants.md`, annotation section of `docs/data-model.md`     | `lib/reader/`                      |
 | AI provider                 | Intelligence section of `docs/architecture.md`                       | `lib/intelligence/`                |
 | AI context builder          | Intelligence section of `docs/architecture.md`, `docs/invariants.md` | `lib/intelligence/`                |

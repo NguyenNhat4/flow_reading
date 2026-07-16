@@ -5,9 +5,11 @@ import 'package:flow_reading/books/book_models.dart';
 import 'package:flow_reading/books/text_anchors.dart';
 import 'package:flow_reading/reader/flutter_content_measurer.dart';
 import 'package:flow_reading/reader/pagination_engine.dart';
+import 'package:flow_reading/reader/reader_action_menu.dart';
 import 'package:flow_reading/reader/reader_selection.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SwipeableReader extends StatefulWidget {
   const SwipeableReader({
@@ -17,6 +19,7 @@ class SwipeableReader extends StatefulWidget {
     this.initialLocator,
     this.onWordSelected,
     this.onPassageSelected,
+    this.onActionSelected,
     super.key,
   });
 
@@ -30,6 +33,9 @@ class SwipeableReader extends StatefulWidget {
 
   /// Receives a stable range whenever reader handles adjust a passage.
   final ValueChanged<PassageSelection>? onPassageSelected;
+
+  /// Opens a workflow for an action and its stable canonical selection.
+  final ReaderActionHandler? onActionSelected;
 
   @override
   State<SwipeableReader> createState() => _SwipeableReaderState();
@@ -135,7 +141,14 @@ class _SwipeableReaderState extends State<SwipeableReader> {
           child: SizedBox(
             height: 52,
             child: Center(
-              child: pages == null || pages.isEmpty
+              child: _selectedRequest != null
+                  ? ReaderActionMenu(
+                      actions: _passageSelection == null
+                          ? wordReaderActions
+                          : passageReaderActions,
+                      onSelected: _performAction,
+                    )
+                  : pages == null || pages.isEmpty
                   ? const SizedBox.shrink()
                   : Semantics(
                       liveRegion: true,
@@ -245,6 +258,55 @@ class _SwipeableReaderState extends State<SwipeableReader> {
       _passageSelection = selection;
     });
     widget.onPassageSelected?.call(selection);
+  }
+
+  ReaderActionRequest? get _selectedRequest {
+    final passage = _passageSelection;
+    if (passage != null) {
+      return ReaderActionRequest(
+        action: ReaderAction.copy,
+        selectionKind: ReaderSelectionKind.passage,
+        anchor: passage.anchor,
+        textSnapshot: passage.textSnapshot,
+      );
+    }
+    final word = _wordSelection;
+    if (word == null) return null;
+    return ReaderActionRequest(
+      action: ReaderAction.copy,
+      selectionKind: ReaderSelectionKind.word,
+      anchor: word.anchor,
+      textSnapshot: word.textSnapshot,
+    );
+  }
+
+  Future<void> _performAction(ReaderAction action) async {
+    final selected = _selectedRequest;
+    if (selected == null) return;
+    final request = ReaderActionRequest(
+      action: action,
+      selectionKind: selected.selectionKind,
+      anchor: selected.anchor,
+      textSnapshot: selected.textSnapshot,
+    );
+    try {
+      if (action == ReaderAction.copy) {
+        await Clipboard.setData(ClipboardData(text: request.textSnapshot));
+      }
+      final handler = widget.onActionSelected;
+      if (handler != null) {
+        await handler(request);
+      } else if (action.requiresInternet && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${action.label} requires internet access.')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${action.label} could not be opened.')),
+      );
+    }
   }
 
   static int _pageForLocator(List<_BookPage> pages, ReadingLocator? locator) {
