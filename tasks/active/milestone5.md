@@ -3,6 +3,8 @@
 
 ## TASK-501 — Implement secure API-key storage
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**

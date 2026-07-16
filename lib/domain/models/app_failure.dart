@@ -41,6 +41,12 @@ final class DatabaseFailure extends AppFailure {
   });
 }
 
+final class CredentialStorageFailure extends AppFailure {
+  const CredentialStorageFailure({
+    super.message = 'Your AI provider key could not be loaded or saved.',
+  });
+}
+
 final class NetworkFailure extends AppFailure {
   const NetworkFailure({
     super.message = 'A network connection could not be established.',

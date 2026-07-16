@@ -1,4 +1,5 @@
 import 'package:flow_reading/domain/repositories/book_file_storage.dart';
+import 'package:flow_reading/domain/repositories/ai_credential_repository.dart';
 import 'package:flow_reading/domain/repositories/bookmark_repository.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/repositories/book_search_repository.dart';
@@ -16,6 +17,7 @@ import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.da
 /// Domain-facing dependencies made available to the presentation layer.
 final class AppDependencies {
   const AppDependencies({
+    required this.aiCredentialRepository,
     required this.bookRepository,
     required this.bookFileStorage,
     required this.bookmarkRepository,
@@ -30,6 +32,7 @@ final class AppDependencies {
     required this.tableOfContentsRepository,
   });
 
+  final AiCredentialRepository aiCredentialRepository;
   final BookRepository bookRepository;
   final BookFileStorage bookFileStorage;
   final BookmarkRepository bookmarkRepository;

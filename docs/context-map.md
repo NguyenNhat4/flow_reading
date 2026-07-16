@@ -27,6 +27,7 @@ Do not read every linked document by default.
 | Reader settings and themes | Reader settings in `docs/data-model.md` | Domain settings, reader UI, data repository |
 | Local persistence | Local persistence in `docs/data-model.md` | Data repositories and services |
 | In-book full-text search | Local full-text search in `docs/data-model.md`, `docs/invariants.md` | Search repository, book persistence, reader UI |
+| Secure AI credentials | AI provider credentials in `docs/data-model.md`, `docs/invariants.md` | Credential repository and platform-secure data implementation |
 | Highlights, notes, bookmarks, AI, translation, or sync | `docs/invariants.md`, `docs/data-model.md`, relevant product requirement | Domain model/repository, data repository, reader UI |
 | Product clarification | Relevant requirement in `docs/product-plan.md` | Varies |
 

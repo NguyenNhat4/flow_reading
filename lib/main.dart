@@ -6,6 +6,7 @@ import 'package:flow_reading/data/repositories/sqlite_note_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_reader_settings_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_reading_position_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_table_of_contents_repository.dart';
+import 'package:flow_reading/data/repositories/secure_ai_credential_repository.dart';
 import 'package:flow_reading/data/services/android_epub_picker.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/data/services/local_book_file_storage.dart';
@@ -33,6 +34,7 @@ Future<AppDependencies> _createDependencies() async {
     MlKitBookLanguageDetector(),
   );
   return AppDependencies(
+    aiCredentialRepository: SecureAiCredentialRepository(),
     bookRepository: repository,
     bookmarkRepository: SqliteBookmarkRepository(database),
     bookSearchRepository: SqliteBookSearchRepository(database),

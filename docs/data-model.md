@@ -254,6 +254,13 @@ bookmark resolves its anchor against newly generated page boundaries.
 - `targetLanguage`
 - `contextFingerprint`
 
+### AI provider credentials
+
+User-owned provider keys are stored only through `AiCredentialRepository`.
+The Android implementation uses `flutter_secure_storage` with an isolated
+namespace and Android KeyStore-backed encryption. Keys are not part of the
+SQLite schema, exported book data, logs, or application error messages.
+
 ### AI conversation
 
 `AiConversation`

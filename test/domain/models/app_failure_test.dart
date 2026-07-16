@@ -8,6 +8,7 @@ void main() {
       UnsupportedDrmFailure(),
       FileSystemFailure(),
       DatabaseFailure(),
+      CredentialStorageFailure(),
       NetworkFailure(),
       InvalidApiKeyFailure(),
       AiProviderFailure(),
