@@ -312,13 +312,23 @@ separation and explicit uncertainty.
 
 `AiCacheEntry`
 
+- `id` (deterministic compatibility key)
 - `bookId`
 - `requestType`
 - `sourceRange`
+- `contentHash`
 - `contextFingerprint`
+- `promptId`
+- `promptVersion`
 - `response`
 - `provider`
 - `model`
+- `createdAt`
+
+Schema version 3 adds the cache compatibility columns to `ai_artifacts`.
+Legacy rows without them are ignored. The cache key includes the content hash,
+context fingerprint, prompt ID/version, provider, model, request type, and
+stable source range, so prompt or content changes cannot silently reuse output.
 
 ## Derived data
 

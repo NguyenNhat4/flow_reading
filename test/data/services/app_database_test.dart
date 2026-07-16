@@ -60,7 +60,7 @@ void main() {
     );
   });
 
-  test('version 2 migration backfills the local search index', () async {
+  test('legacy migration backfills the local search index', () async {
     final path = '${root.path}/legacy.db';
     final legacy = await databaseFactoryFfi.openDatabase(
       path,
@@ -94,6 +94,17 @@ CREATE TABLE chapter_content (
   schema_version INTEGER NOT NULL,
   content_json TEXT NOT NULL
 )''');
+          await database.execute('''
+CREATE TABLE ai_artifacts (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  source_range_json TEXT,
+  response_json TEXT NOT NULL,
+  provider TEXT,
+  model TEXT,
+  created_at TEXT NOT NULL
+)''');
         },
       ),
     );
@@ -119,8 +130,58 @@ CREATE TABLE chapter_content (
       ['backfilled'],
     );
 
-    expect(await database.getVersion(), 2);
+    expect(await database.getVersion(), AppDatabase.schemaVersion);
     expect(rows.single['segment_id'], 'block');
+  });
+
+  test('version 3 migration adds AI cache compatibility columns', () async {
+    final path = '${root.path}/version-2.db';
+    final legacy = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 2,
+        onCreate: (database, version) async {
+          await database.execute('''
+CREATE TABLE ai_artifacts (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  source_range_json TEXT,
+  response_json TEXT NOT NULL,
+  provider TEXT,
+  model TEXT,
+  created_at TEXT NOT NULL
+)''');
+        },
+      ),
+    );
+    await legacy.insert('ai_artifacts', {
+      'id': 'legacy',
+      'book_id': 'book',
+      'kind': 'summary',
+      'response_json': '{}',
+      'created_at': DateTime.utc(2026).toIso8601String(),
+    });
+    await legacy.close();
+
+    final upgraded = AppDatabase(factory: databaseFactoryFfi, path: path);
+    addTearDown(upgraded.close);
+    final database = await upgraded.open();
+    final columns = await database.rawQuery('PRAGMA table_info(ai_artifacts)');
+    final names = columns.map((column) => column['name']).toSet();
+    final row = (await database.query('ai_artifacts')).single;
+
+    expect(
+      names,
+      containsAll([
+        'content_hash',
+        'context_fingerprint',
+        'prompt_id',
+        'prompt_version',
+      ]),
+    );
+    expect(row['content_hash'], isNull);
+    expect(await database.getVersion(), AppDatabase.schemaVersion);
   });
 
   test('failed transaction preserves previously stored books', () async {

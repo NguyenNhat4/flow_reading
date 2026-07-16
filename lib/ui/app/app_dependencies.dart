@@ -1,3 +1,4 @@
+import 'package:flow_reading/domain/repositories/ai_artifact_repository.dart';
 import 'package:flow_reading/domain/repositories/ai_credential_repository.dart';
 import 'package:flow_reading/domain/repositories/ai_provider.dart';
 import 'package:flow_reading/domain/repositories/book_file_storage.dart';
@@ -18,6 +19,7 @@ import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.da
 /// Domain-facing dependencies made available to the presentation layer.
 final class AppDependencies {
   const AppDependencies({
+    required this.aiArtifactRepository,
     required this.aiCredentialRepository,
     required this.aiProvider,
     required this.bookRepository,
@@ -34,6 +36,7 @@ final class AppDependencies {
     required this.tableOfContentsRepository,
   });
 
+  final AiArtifactRepository aiArtifactRepository;
   final AiCredentialRepository aiCredentialRepository;
   final AiProvider aiProvider;
   final BookRepository bookRepository;

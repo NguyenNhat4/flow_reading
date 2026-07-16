@@ -1,3 +1,4 @@
+import 'package:flow_reading/data/repositories/sqlite_ai_artifact_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_book_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_book_search_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_bookmark_repository.dart';
@@ -35,6 +36,7 @@ Future<AppDependencies> _createDependencies() async {
     MlKitBookLanguageDetector(),
   );
   return AppDependencies(
+    aiArtifactRepository: SqliteAiArtifactRepository(database),
     aiCredentialRepository: SecureAiCredentialRepository(),
     aiProvider: OpenAiProvider(),
     bookRepository: repository,
