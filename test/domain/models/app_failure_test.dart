@@ -14,6 +14,7 @@ void main() {
       AiRateLimitFailure(),
       AiQuotaFailure(),
       AiRequestCancelledFailure(),
+      AiContextLimitFailure(),
       AiProviderFailure(),
     ];
 

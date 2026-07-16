@@ -274,6 +274,15 @@ credential and default-model validation and `POST /v1/responses` for completion
 and server-sent-event streaming. It sends `store: false`, uses abortable HTTP
 requests for cancellation, and defaults to `gpt-5.6-luna`.
 
+### AI context package
+
+`AiContextPackage` contains the chapter title, current logical
+`ReadingLocator`, anchored canonical passages, and recent conversation
+messages. Passage roles distinguish the selection, containing sentence and
+paragraph, nearby blocks, and relevant earlier passages. Context building uses
+a 12,000-character default budget, keeps selected text first, merges duplicate
+text while retaining all roles, and never uses a visual page number.
+
 ### AI conversation
 
 `AiConversation`

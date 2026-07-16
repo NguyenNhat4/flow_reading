@@ -29,6 +29,7 @@ Do not read every linked document by default.
 | In-book full-text search | Local full-text search in `docs/data-model.md`, `docs/invariants.md` | Search repository, book persistence, reader UI |
 | Secure AI credentials | AI provider credentials in `docs/data-model.md`, `docs/invariants.md` | Credential repository and platform-secure data implementation |
 | AI provider interface and errors | AI provider boundary in `docs/data-model.md`, `docs/invariants.md` | Domain AI models and provider port |
+| AI context building | AI context package in `docs/data-model.md`, `docs/invariants.md` | Context models, local search, context use case |
 | Highlights, notes, bookmarks, AI, translation, or sync | `docs/invariants.md`, `docs/data-model.md`, relevant product requirement | Domain model/repository, data repository, reader UI |
 | Product clarification | Relevant requirement in `docs/product-plan.md` | Varies |
 

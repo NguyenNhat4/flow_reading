@@ -80,6 +80,12 @@ final class AiRequestCancelledFailure extends AppFailure {
   });
 }
 
+final class AiContextLimitFailure extends AppFailure {
+  const AiContextLimitFailure({
+    super.message = 'Select a shorter passage to use this AI feature.',
+  });
+}
+
 final class AiProviderFailure extends AppFailure {
   const AiProviderFailure({
     super.message = 'The AI provider could not complete the request.',
