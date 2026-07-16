@@ -17,21 +17,4 @@ For each task:
 
 ## Approved application structure
 
-Application code belongs under:
-
-- `lib/domain/` for Flutter-independent models, repository ports, and use cases.
-- `lib/data/` for repository implementations and external services.
-- `lib/ui/` for app composition types, ViewModels, themes, and views.
-
-Do not add another top-level application folder without approval.
-
-## Dependency rules
-
-- Domain must not import data, UI, Flutter, SQLite, files, or plugins.
-- Data may import domain but must not import UI.
-- UI feature code may import domain but not concrete data implementations.
-- `lib/main.dart` is the composition root and may import all layers.
-- Views render state and delegate commands; ViewModels own presentation logic.
-- Use manual constructor dependency injection.
-- Preserve stable IDs, canonical text offsets, persisted schemas, and
-  local-first behavior.
+use skill for architectural best pratices and follow
