@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flow_reading/features/import/application/epub_import_service.dart';
+import 'package:flow_reading/platform/epub_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

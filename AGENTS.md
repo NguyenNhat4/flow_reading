@@ -5,7 +5,7 @@ This is a local-first Flutter Android EPUB reader with contextual AI features.
 The application imports EPUB books, converts them into a canonical book representation, paginates content for reading, and attaches reading state, annotations, translations, and AI artifacts to stable content identifiers.
 
 
-** external phone for run code is already connected through usb
+** external phone for run code is already connected through usb, run on this after done a task if needed.
 ## Required reading order
 
 For every task, read only:
@@ -89,7 +89,7 @@ Assumptions:
 Risks:
 ```
 
-Do not modify files before producing this brief plan and get confirmation from user.
+Do not modify files before producing this brief plan.
 
 ## File budget
 
@@ -113,6 +113,7 @@ If the task cannot fit within this budget, stop and propose a revised plan befor
 * Do not invent requirements missing from the task.
 * Add comments only where the reason is not clear from the code.
 
+
 ## Testing rules
 
 Run the narrowest relevant checks first.
@@ -132,15 +133,8 @@ Run the complete test suite only when:
 * Public interfaces changed.
 * The task explicitly requires it.
 
-## Completion response
+At the end of each task, add/update revelant helpful contexts to files in /docs or create new one  in markdown format, you can organize them in a folder if needed and update context-map for references
 
-At completion, report only:
 
-```text
-Implemented:
-Changed files:
-Validation:
-Remaining issues:
-```
 
 Do not create a separate completion document.

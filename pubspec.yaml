@@ -46,10 +46,20 @@ dependencies:
   http: ^1.6.0
   # Network-type observation; requests still handle connectivity failures.
   connectivity_plus: ^7.2.0
+  # Deterministic content-addressed IDs for canonical EPUB content.
+  crypto: ^3.0.7
+  # Namespace-aware parsing for EPUB container and package documents.
+  xml: ^6.6.1
+  # Tolerant HTML5 parsing for real-world EPUB chapter markup.
+  html: ^0.15.6
+  # Bundled on-device language identification for imported book text.
+  google_mlkit_language_id: ^0.14.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Desktop SQLite implementation for migration and repository unit tests.
+  sqflite_common_ffi: ^2.4.2
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

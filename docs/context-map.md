@@ -13,10 +13,18 @@ Do not read every linked document by default.
 
 | Task area                   | Read                                                                 | Main code location                 |
 | --------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
-| EPUB import                 | `docs/data-model.md`, EPUB import section of `docs/architecture.md`  | `lib/books/`                       |
+| Project orientation and progress | `docs/project-architecture-guide.md`                           | All approved modules               |
+| EPUB validation             | Validation section of `docs/epub-import.md`                         | `lib/books/epub_validator.dart`    |
+| Original EPUB storage       | Storage lifecycle section of `docs/epub-import.md`                  | `lib/books/`, `lib/platform/`      |
+| Metadata, spine, and TOC    | Package parsing section of `docs/epub-import.md`, `docs/data-model.md` | `lib/books/`                     |
+| Canonical HTML conversion   | Canonical conversion section of `docs/epub-import.md`, `docs/data-model.md` | `lib/books/`                |
+| Sentence segmentation       | Sentence segmentation section of `docs/epub-import.md`, sentence section of `docs/data-model.md` | `lib/books/` |
+| EPUB import orchestration   | Import orchestration section of `docs/epub-import.md`, EPUB import section of `docs/architecture.md` | `lib/books/`, `lib/app/` |
+| Source language detection   | Language detection section of `docs/epub-import.md`                 | `lib/books/`, `lib/platform/`      |
 | Canonical book model        | `docs/data-model.md`, `docs/invariants.md`                           | `lib/books/`                       |
 | Stable IDs and text anchors | `docs/invariants.md`, `docs/data-model.md`                           | `lib/books/`, `lib/shared/`        |
-| Library UI                  | Relevant task only                                                   | `lib/books/`                       |
+| Library UI, search, sorting, and local opening | Import orchestration section of `docs/epub-import.md`, reading state in `docs/invariants.md` | `lib/app/`, `lib/reader/` |
+| Local book removal          | Storage lifecycle and repository sections of `docs/epub-import.md` | `lib/books/`, `lib/platform/`, `lib/app/` |
 | Pagination                  | Pagination section of `docs/architecture.md`, `docs/invariants.md`   | `lib/reader/`                      |
 | Reading position            | `docs/invariants.md`, reader section of `docs/architecture.md`       | `lib/reader/`                      |
 | Highlights and notes        | `docs/invariants.md`, annotation section of `docs/data-model.md`     | `lib/reader/`                      |
@@ -25,7 +33,8 @@ Do not read every linked document by default.
 | Translation                 | Translation section of `docs/architecture.md`, `docs/invariants.md`  | `lib/intelligence/`, `lib/reader/` |
 | Chapter overview            | Intelligence section of `docs/architecture.md`                       | `lib/intelligence/`                |
 | Settings                    | Relevant task only                                                   | `lib/settings/`                    |
-| Local persistence           | Persistence section of `docs/architecture.md`, relevant data models  | `lib/platform/`                    |
+| Local persistence           | Persistence section of `docs/architecture.md`, local persistence section of `docs/data-model.md` | `lib/platform/` |
+| Book repository             | Repository and database section of `docs/epub-import.md`, local persistence section of `docs/data-model.md` | `lib/books/`, `lib/platform/` |
 | Synchronization             | Sync section of `docs/architecture.md`, `docs/invariants.md`         | `lib/sync/`                        |
 | Product clarification       | Relevant requirement inside `docs/product-plan.md`                   | Varies                             |
 
@@ -69,6 +78,15 @@ Contains canonical persisted and in-memory models.
 
 Read for tasks that create or change stored data.
 
+### `docs/epub-import.md`
+
+Contains the implemented Milestone 1 import pipeline, its feature/platform
+contracts, failure cleanup, parsing stages, and focused validation guidance.
+
+Read only the relevant section for work involving EPUB validation, storage,
+package parsing, canonical conversion, sentence segmentation, import progress,
+book persistence, or source-language detection.
+
 ## Source-of-truth priority
 
 When information conflicts, use this order:
@@ -76,9 +94,10 @@ When information conflicts, use this order:
 1. Assigned task acceptance criteria.
 2. `docs/invariants.md`.
 3. `docs/architecture.md`.
-4. `docs/data-model.md`.
-5. `docs/product-plan.md`.
-6. Existing implementation.
+4. `docs/epub-import.md`.
+5. `docs/data-model.md`.
+6. `docs/product-plan.md`.
+7. Existing implementation.
 
 Do not silently resolve meaningful conflicts. Report them before implementation.
 

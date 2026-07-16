@@ -19,6 +19,16 @@ final class UnsupportedDrmFailure extends AppFailure {
   });
 }
 
+final class DuplicateBookFailure extends AppFailure {
+  const DuplicateBookFailure({
+    super.message = 'This EPUB has already been imported.',
+  });
+}
+
+final class ImportCancelledFailure extends AppFailure {
+  const ImportCancelledFailure({super.message = 'The import was cancelled.'});
+}
+
 final class FileSystemFailure extends AppFailure {
   const FileSystemFailure({
     super.message = 'The book file could not be read or saved.',
