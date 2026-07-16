@@ -10,6 +10,7 @@ final class FlutterContentMeasurer implements ContentMeasurer {
 
   static const imagePlaceholderHeight = 128.0;
   static const listItemSpacing = 6.0;
+  static const quoteInset = 16.0;
 
   @override
   int sourceLength(ContentBlock block) => switch (block) {
@@ -45,16 +46,27 @@ final class FlutterContentMeasurer implements ContentMeasurer {
     final projection = _projection(block, layout.settings);
     final displayStart = projection.displayOffsetForSource(startOffset);
     final text = projection.spanFrom(displayStart);
+    final textWidth = block is QuoteBlock ? maxWidth - quoteInset : maxWidth;
+    if (textWidth <= 0) {
+      return BlockMeasurement(endOffset: startOffset, height: 0);
+    }
+    final maxLines = math.max(
+      1,
+      (maxHeight / math.max(1, layout.settings.fontSize * layout.textScale))
+              .ceil() +
+          2,
+    );
     final painter = TextPainter(
       text: text,
       textDirection: TextDirection.ltr,
       textScaler: TextScaler.linear(layout.textScale),
-    )..layout(maxWidth: maxWidth);
+      maxLines: maxLines,
+    )..layout(maxWidth: textWidth);
     try {
       final completeHeight =
           painter.height +
           projection.spacingBetween(startOffset, projection.sourceLength);
-      if (completeHeight <= maxHeight + 0.001) {
+      if (!painter.didExceedMaxLines && completeHeight <= maxHeight + 0.001) {
         return BlockMeasurement(
           endOffset: projection.sourceLength,
           height: completeHeight,
@@ -63,8 +75,7 @@ final class FlutterContentMeasurer implements ContentMeasurer {
 
       final lines = painter.computeLineMetrics();
       var textHeight = 0.0;
-      var fittedHeight = 0.0;
-      var sourceEnd = startOffset;
+      final candidateEnds = <int>[];
       for (final line in lines) {
         textHeight += line.height;
         final lineSourceEnd = _sourceEndForLine(
@@ -72,21 +83,78 @@ final class FlutterContentMeasurer implements ContentMeasurer {
           line,
           projection,
           displayStart,
-          maxWidth,
+          textWidth,
         );
         final height =
             textHeight + projection.spacingBetween(startOffset, lineSourceEnd);
         if (height > maxHeight + 0.001) break;
-        fittedHeight = height;
-        sourceEnd = lineSourceEnd;
+        if (lineSourceEnd > startOffset &&
+            (candidateEnds.isEmpty || candidateEnds.last != lineSourceEnd)) {
+          candidateEnds.add(lineSourceEnd);
+        }
       }
-      if (sourceEnd <= startOffset) {
-        return BlockMeasurement(endOffset: startOffset, height: 0);
+      for (final sourceEnd in candidateEnds.reversed) {
+        final height = _exactRangeHeight(
+          projection: projection,
+          startOffset: startOffset,
+          endOffset: sourceEnd,
+          maxWidth: textWidth,
+          textScale: layout.textScale,
+        );
+        if (height <= maxHeight + 0.001) {
+          return BlockMeasurement(endOffset: sourceEnd, height: height);
+        }
       }
-      return BlockMeasurement(endOffset: sourceEnd, height: fittedHeight);
+      return BlockMeasurement(endOffset: startOffset, height: 0);
     } finally {
       painter.dispose();
     }
+  }
+
+  static double _exactRangeHeight({
+    required _TextProjection projection,
+    required int startOffset,
+    required int endOffset,
+    required double maxWidth,
+    required double textScale,
+  }) {
+    final displayStart = projection.displayOffsetForSource(startOffset);
+    final displayEnd = projection.displayOffsetForSource(endOffset);
+    final painter = TextPainter(
+      text: projection.spanBetween(displayStart, displayEnd),
+      textDirection: TextDirection.ltr,
+      textScaler: TextScaler.linear(textScale),
+    )..layout(maxWidth: maxWidth);
+    try {
+      return painter.height + projection.spacingBetween(startOffset, endOffset);
+    } finally {
+      painter.dispose();
+    }
+  }
+
+  TextSpan textSpanForRange({
+    required ContentBlock block,
+    required ReaderSettings settings,
+    required int startOffset,
+    required int endOffset,
+  }) {
+    if (block is ImageBlock) {
+      throw ArgumentError.value(block, 'block', 'images do not contain text');
+    }
+    final projection = _projection(block, settings);
+    if (startOffset < 0 ||
+        endOffset < startOffset ||
+        endOffset > projection.sourceLength) {
+      throw RangeError.range(
+        endOffset,
+        startOffset,
+        projection.sourceLength,
+        'endOffset',
+      );
+    }
+    final displayStart = projection.displayOffsetForSource(startOffset);
+    final displayEnd = projection.displayOffsetForSource(endOffset);
+    return projection.spanBetween(displayStart, displayEnd);
   }
 
   static int _sourceEndForLine(
@@ -220,12 +288,21 @@ final class _TextProjection {
   }
 
   TextSpan spanFrom(int displayStart) {
+    return spanBetween(displayStart, displayLength);
+  }
+
+  TextSpan spanBetween(int displayStart, int displayEnd) {
     final children = <InlineSpan>[];
     for (final run in runs) {
       if (run.end <= displayStart) continue;
+      if (run.start >= displayEnd) break;
       final localStart = math.max(displayStart, run.start) - run.start;
+      final localEnd = math.min(displayEnd, run.end) - run.start;
       children.add(
-        TextSpan(text: run.text.substring(localStart), style: run.style),
+        TextSpan(
+          text: run.text.substring(localStart, localEnd),
+          style: run.style,
+        ),
       );
     }
     return TextSpan(children: children);

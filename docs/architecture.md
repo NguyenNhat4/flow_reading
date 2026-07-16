@@ -200,6 +200,21 @@ page spans blocks. Page indexes and layout keys remain derived navigation data;
 they must not replace logical reading positions and are never persisted in a
 `pages` table.
 
+The swipeable reader paginates every canonical chapter in spine order before it
+creates a finite horizontal page view. Pagination yields between chapters so
+loading UI remains responsive, and stale work is discarded when the effective
+viewport changes. Dragging left advances and dragging right returns; the first
+and final global pages are hard bounds, while adjacent spine chapters meet at a
+normal page transition. Reader chrome reports the current chapter and global
+`Page X of Y` without inserting chapter titles into canonical page content.
+
+Measurement and display share the same source-range projection and typography,
+including inline styles, list projection, quote inset, and image placeholder
+geometry. Text measurement is bounded to the number of lines that can plausibly
+fit the viewport so pagination remains practical for long chapters. Only the
+settled page's stable start anchor is sent to reading-position persistence;
+temporary page numbers remain presentation state.
+
 ## Implementation order
 
 ```text

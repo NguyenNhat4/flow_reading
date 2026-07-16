@@ -44,6 +44,8 @@ Convert canonical chapter blocks into temporary page boundaries.
 
 ## TASK-303 — Build swipeable reader
 
+**Status:** Complete
+
 **Priority:** P0
 
 Implement:
