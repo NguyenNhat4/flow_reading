@@ -52,12 +52,16 @@ final class PaginationEngine {
 
   final double blockSpacing;
 
+  static double usableContentHeight(ReaderLayout layout) =>
+      layout.contentHeight;
+
   PaginationResult paginate({
     required Chapter chapter,
     required ReaderLayout layout,
     required ContentMeasurer measurer,
   }) {
-    if (layout.contentWidth <= 0 || layout.contentHeight <= 0) {
+    final contentHeight = usableContentHeight(layout);
+    if (layout.contentWidth <= 0 || contentHeight <= 0) {
       throw ArgumentError('Reader margins leave no usable viewport.');
     }
     if (!blockSpacing.isFinite || blockSpacing < 0) {
@@ -102,7 +106,7 @@ final class PaginationEngine {
       var offset = 0;
       while (offset < sourceLength) {
         final spacing = pageStart != null && offset == 0 ? blockSpacing : 0.0;
-        final availableHeight = layout.contentHeight - usedHeight - spacing;
+        final availableHeight = contentHeight - usedHeight - spacing;
         final measurement = availableHeight > 0
             ? measurer.measure(
                 block: block,

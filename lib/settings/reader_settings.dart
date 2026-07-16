@@ -163,12 +163,15 @@ final class ReaderSettings {
 }
 
 final class ReaderLayout {
+  static const defaultPaginationVersion = 2;
+  static const paginationBottomSafetyInset = 2.0;
+
   ReaderLayout({
     required this.settings,
     required this.viewportWidth,
     required this.viewportHeight,
     this.textScale = 1,
-    this.paginationVersion = 1,
+    this.paginationVersion = defaultPaginationVersion,
   }) {
     _validatePositive(viewportWidth, 'viewportWidth');
     _validatePositive(viewportHeight, 'viewportHeight');
@@ -191,8 +194,11 @@ final class ReaderLayout {
   double get contentWidth =>
       viewportWidth - settings.margins.left - settings.margins.right;
 
-  double get contentHeight =>
+  double get viewportContentHeight =>
       viewportHeight - settings.margins.top - settings.margins.bottom;
+
+  double get contentHeight =>
+      viewportContentHeight - paginationBottomSafetyInset;
 
   String get paginationCacheKey {
     final payload = <Object?>[

@@ -42,8 +42,8 @@ void main() {
     );
 
     expect(result.pages, hasLength(3));
-    expect(result.pages.map((page) => page.start.startOffset), [0, 5, 10]);
-    expect(result.pages.map((page) => page.end.startOffset), [5, 10, 12]);
+    expect(result.pages.map((page) => page.start.startOffset), [0, 4, 8]);
+    expect(result.pages.map((page) => page.end.startOffset), [4, 8, 12]);
     expect(
       result.pages.every((page) => page.layoutKey == result.layoutKey),
       isTrue,

@@ -1,6 +1,8 @@
 import 'package:flow_reading/books/book_models.dart';
 import 'package:flow_reading/books/book_repository.dart';
 import 'package:flow_reading/books/text_anchors.dart';
+import 'package:flow_reading/reader/flutter_content_measurer.dart';
+import 'package:flow_reading/reader/pagination_engine.dart';
 import 'package:flow_reading/reader/reader_screen.dart';
 import 'package:flow_reading/reader/swipeable_reader.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
@@ -8,6 +10,59 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('pagination v2 reserves render slack and keeps anchors contiguous', () {
+    final previous = ReaderLayout(
+      settings: ReaderSettings(
+        margins: ReaderMargins(left: 0, top: 0, right: 0, bottom: 0),
+      ),
+      viewportWidth: 180,
+      viewportHeight: 120,
+      paginationVersion: 1,
+    );
+    final current = ReaderLayout(
+      settings: ReaderSettings(
+        margins: ReaderMargins(left: 0, top: 0, right: 0, bottom: 0),
+      ),
+      viewportWidth: 180,
+      viewportHeight: 120,
+    );
+
+    expect(current.paginationVersion, 2);
+    expect(current.viewportContentHeight, 120);
+    expect(PaginationEngine.usableContentHeight(current), 118);
+    expect(current.paginationCacheKey, isNot(previous.paginationCacheKey));
+
+    const measurer = FlutterContentMeasurer();
+    final result = const PaginationEngine().paginate(
+      chapter: _overflowRegressionChapter,
+      layout: current,
+      measurer: measurer,
+    );
+    expect(result.pages, isNotEmpty);
+    for (var index = 1; index < result.pages.length; index++) {
+      final previousEnd = result.pages[index - 1].end;
+      final currentStart = result.pages[index].start;
+      if (currentStart.blockId == previousEnd.blockId) {
+        expect(currentStart.startOffset, previousEnd.startOffset);
+        continue;
+      }
+      final previousBlockIndex = _overflowRegressionChapter.blocks.indexWhere(
+        (block) => block.id == previousEnd.blockId,
+      );
+      final currentBlockIndex = _overflowRegressionChapter.blocks.indexWhere(
+        (block) => block.id == currentStart.blockId,
+      );
+      expect(currentBlockIndex, previousBlockIndex + 1);
+      expect(
+        previousEnd.startOffset,
+        measurer.sourceLength(
+          _overflowRegressionChapter.blocks[previousBlockIndex],
+        ),
+      );
+      expect(currentStart.startOffset, 0);
+    }
+  });
+
   testWidgets('swipes through spine chapters and respects book bounds', (
     tester,
   ) async {
@@ -94,6 +149,38 @@ void main() {
       await _swipeNext(tester);
     }
     expect(find.textContaining('Page $total of $total'), findsOneWidget);
+  });
+
+  testWidgets('mixed near-full pages render without bottom overflow', (
+    tester,
+  ) async {
+    final positions = _PositionRepository();
+    await _pumpReader(
+      tester,
+      books: _BookRepository(chapters: const [_overflowRegressionChapter]),
+      positions: positions,
+    );
+
+    expect(tester.takeException(), isNull);
+    final indicator = tester.widget<Text>(
+      find.byKey(const ValueKey('reader-page-indicator')),
+    );
+    final total = int.parse(
+      RegExp(r'Page 1 of (\d+)').firstMatch(indicator.data!)!.group(1)!,
+    );
+    final anchors = <String>{};
+    for (var page = 1; page <= total; page++) {
+      final anchor = positions.saved.last.locator.anchor;
+      anchors.add('${anchor.blockId}:${anchor.startOffset}');
+      expect(tester.takeException(), isNull);
+      if (page < total) await _swipeNext(tester);
+    }
+
+    expect(anchors, hasLength(total));
+    expect(find.textContaining('Page $total of $total'), findsOneWidget);
+    await _swipeNext(tester);
+    expect(find.textContaining('Page $total of $total'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('restores a saved locator to its containing page', (
@@ -344,6 +431,84 @@ const _mixedChapter = Chapter(
       items: [
         BookListItem(spans: [InlineTextSpan(text: 'List item')]),
       ],
+    ),
+  ],
+);
+
+const _overflowRegressionChapter = Chapter(
+  id: 'chapter-overflow',
+  bookId: 'book-id',
+  title: 'Overflow regression',
+  order: 0,
+  blocks: [
+    HeadingBlock(
+      id: 'overflow-heading',
+      chapterId: 'chapter-overflow',
+      order: 0,
+      level: 2,
+      spans: [InlineTextSpan(text: 'Measured reader layout')],
+    ),
+    ParagraphBlock(
+      id: 'overflow-paragraph',
+      chapterId: 'chapter-overflow',
+      order: 1,
+      spans: [
+        InlineTextSpan(
+          text:
+              'Styled Unicode text 😀 preserves source offsets while bold and italic fragments wrap across several lines. ',
+          bold: true,
+        ),
+        InlineTextSpan(
+          text:
+              'Additional paragraph content fills the available page height closely enough to exercise fractional text metrics and block spacing. ',
+          italic: true,
+        ),
+      ],
+    ),
+    QuoteBlock(
+      id: 'overflow-quote',
+      chapterId: 'chapter-overflow',
+      order: 2,
+      spans: [
+        InlineTextSpan(
+          text:
+              'Quoted content uses the shared inset and can continue onto another page without changing its stable source identity.',
+        ),
+      ],
+    ),
+    ListBlock(
+      id: 'overflow-list',
+      chapterId: 'chapter-overflow',
+      order: 3,
+      items: [
+        BookListItem(
+          spans: [
+            InlineTextSpan(
+              text: 'First list item contains enough text to wrap naturally.',
+            ),
+          ],
+        ),
+        BookListItem(
+          spans: [
+            InlineTextSpan(
+              text: 'Second list item verifies deterministic list projection.',
+            ),
+          ],
+        ),
+      ],
+    ),
+    ImageBlock(
+      id: 'overflow-image',
+      chapterId: 'chapter-overflow',
+      order: 4,
+      assetId: 'overflow-asset',
+      altText: 'Atomic image placeholder',
+    ),
+    ParagraphBlock(
+      id: 'overflow-ending',
+      chapterId: 'chapter-overflow',
+      order: 5,
+      spans: [InlineTextSpan(text: 'Content after the image remains visible.')],
     ),
   ],
 );
