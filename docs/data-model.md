@@ -222,6 +222,12 @@ canonical chapter content instead of being duplicated in note rows. Opening a
 note converts the range start into a collapsed reading locator and repaginates
 to the containing page.
 
+Bookmarks use the dedicated `bookmarks` table and accept only collapsed
+`ReadingLocator` anchors. Their IDs come from that logical position, so adding
+the same locator does not create duplicates. The Saved panel derives bookmark
+chapter labels and surrounding text from canonical content, and opening a
+bookmark resolves its anchor against newly generated page boundaries.
+
 ### Translation
 
 `Translation`

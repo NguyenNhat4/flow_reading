@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flow_reading/domain/models/bookmark.dart';
 import 'package:flow_reading/domain/models/reader_note.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
 import 'package:flutter/material.dart';
@@ -9,15 +10,19 @@ class ReaderSavedItemsPanel extends StatelessWidget {
   const ReaderSavedItemsPanel({
     required this.viewModel,
     required this.onOpenNote,
+    required this.onOpenBookmark,
     required this.onEditNote,
     required this.onDeleteNote,
+    required this.onDeleteBookmark,
     super.key,
   });
 
   final ReaderViewModel viewModel;
   final ValueChanged<ReaderNote> onOpenNote;
+  final ValueChanged<Bookmark> onOpenBookmark;
   final ValueChanged<ReaderNote> onEditNote;
   final Future<bool> Function(ReaderNote note) onDeleteNote;
+  final Future<bool> Function(Bookmark bookmark) onDeleteBookmark;
 
   @override
   Widget build(BuildContext context) {
@@ -28,30 +33,92 @@ class ReaderSavedItemsPanel extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 640),
           child: SizedBox(
             height: math.min(680, constraints.maxHeight * 0.85),
-            child: ListenableBuilder(
-              listenable: viewModel,
-              builder: (context, _) => Column(
-                children: [
-                  ListTile(
-                    title: Text(
-                      'Saved',
-                      style: Theme.of(context).textTheme.titleLarge,
+            child: DefaultTabController(
+              length: 2,
+              child: ListenableBuilder(
+                listenable: viewModel,
+                builder: (context, _) => Column(
+                  children: [
+                    ListTile(
+                      title: Text(
+                        'Saved',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      trailing: IconButton(
+                        tooltip: 'Close saved items',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
                     ),
-                    trailing: IconButton(
-                      tooltip: 'Close saved items',
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
+                    const TabBar(
+                      tabs: [
+                        Tab(text: 'Notes'),
+                        Tab(text: 'Bookmarks'),
+                      ],
                     ),
-                  ),
-                  const Divider(height: 1),
-                  Expanded(child: _notes(context)),
-                ],
+                    const Divider(height: 1),
+                    Expanded(
+                      child: TabBarView(
+                        children: [_notes(context), _bookmarks(context)],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _bookmarks(BuildContext context) {
+    final bookmarks = viewModel.bookmarks;
+    if (bookmarks.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            viewModel.bookmarkLoadError == null
+                ? 'No bookmarks yet. Use the bookmark button while reading.'
+                : 'Bookmarks could not be loaded.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      key: const ValueKey('saved-bookmarks-list'),
+      itemCount: bookmarks.length,
+      itemBuilder: (context, index) {
+        final bookmark = bookmarks[index];
+        final anchor = bookmark.locator.anchor;
+        return ListTile(
+          key: ValueKey('saved-bookmark-${bookmark.id}'),
+          title: Text(viewModel.chapterTitleFor(anchor)),
+          subtitle: Text(
+            viewModel.passagePreview(anchor),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          onTap: () => onOpenBookmark(bookmark),
+          trailing: IconButton(
+            tooltip: 'Remove bookmark',
+            onPressed: () => _deleteBookmark(context, bookmark),
+            icon: const Icon(Icons.delete_outline),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteBookmark(BuildContext context, Bookmark bookmark) async {
+    final deleted = await onDeleteBookmark(bookmark);
+    if (!deleted && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The bookmark could not be removed.')),
+      );
+    }
   }
 
   Widget _notes(BuildContext context) {

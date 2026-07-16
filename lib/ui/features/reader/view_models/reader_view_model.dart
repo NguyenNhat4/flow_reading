@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flow_reading/domain/models/book_models.dart';
+import 'package:flow_reading/domain/models/bookmark.dart';
 import 'package:flow_reading/domain/models/highlight.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/reader_note.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
+import 'package:flow_reading/domain/repositories/bookmark_repository.dart';
 import 'package:flow_reading/domain/repositories/highlight_repository.dart';
 import 'package:flow_reading/domain/repositories/note_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
@@ -21,6 +23,7 @@ final class ReaderViewModel extends ChangeNotifier {
     required BookRepository bookRepository,
     required ReadingPositionRepository positionRepository,
     required ReaderSettingsRepository settingsRepository,
+    BookmarkRepository? bookmarkRepository,
     HighlightRepository? highlightRepository,
     NoteRepository? noteRepository,
     TableOfContentsRepository? tableOfContentsRepository,
@@ -29,6 +32,7 @@ final class ReaderViewModel extends ChangeNotifier {
     bookRepository,
     positionRepository,
     settingsRepository,
+    bookmarkRepository,
     highlightRepository,
     noteRepository,
     tableOfContentsRepository,
@@ -39,6 +43,7 @@ final class ReaderViewModel extends ChangeNotifier {
     this._bookRepository,
     this._positionRepository,
     this._settingsRepository,
+    this._bookmarkRepository,
     this._highlightRepository,
     this._noteRepository,
     this._tableOfContentsRepository,
@@ -48,6 +53,7 @@ final class ReaderViewModel extends ChangeNotifier {
   final BookRepository _bookRepository;
   final ReadingPositionRepository _positionRepository;
   final ReaderSettingsRepository _settingsRepository;
+  final BookmarkRepository? _bookmarkRepository;
   final HighlightRepository? _highlightRepository;
   final NoteRepository? _noteRepository;
   final TableOfContentsRepository? _tableOfContentsRepository;
@@ -58,10 +64,12 @@ final class ReaderViewModel extends ChangeNotifier {
   ReadingLocator? _locator;
   List<Chapter> _chapters = const [];
   List<TableOfContentsEntry> _tableOfContents = const [];
+  List<Bookmark> _bookmarks = const [];
   List<Highlight> _highlights = const [];
   List<ReaderNote> _notes = const [];
   Object? _highlightLoadError;
   Object? _noteLoadError;
+  Object? _bookmarkLoadError;
   Object? _loadError;
   int _readerGeneration = 0;
   bool _loaded = false;
@@ -71,10 +79,12 @@ final class ReaderViewModel extends ChangeNotifier {
   ReadingLocator? get locator => _locator;
   List<Chapter> get chapters => _chapters;
   List<TableOfContentsEntry> get tableOfContents => _tableOfContents;
+  List<Bookmark> get bookmarks => _bookmarks;
   List<Highlight> get highlights => _highlights;
   List<ReaderNote> get notes => _notes;
   Object? get highlightLoadError => _highlightLoadError;
   Object? get noteLoadError => _noteLoadError;
+  Object? get bookmarkLoadError => _bookmarkLoadError;
   Object? get loadError => _loadError;
   int get readerGeneration => _readerGeneration;
   bool get isLoaded => _loaded;
@@ -96,6 +106,16 @@ final class ReaderViewModel extends ChangeNotifier {
       _tableOfContents = List.unmodifiable(
         results[3]! as List<TableOfContentsEntry>,
       );
+      final bookmarkRepository = _bookmarkRepository;
+      if (bookmarkRepository != null) {
+        try {
+          _bookmarks = List.unmodifiable(
+            await bookmarkRepository.listForBook(book.id),
+          );
+        } catch (error) {
+          _bookmarkLoadError = error;
+        }
+      }
       final repository = _highlightRepository;
       if (repository != null) {
         try {
@@ -124,7 +144,58 @@ final class ReaderViewModel extends ChangeNotifier {
 
   void showPosition(TextAnchor anchor) {
     _locator = ReadingLocator(anchor: anchor);
+    _notify();
     unawaited(savePosition().catchError((Object _) {}));
+  }
+
+  bool get isCurrentPositionBookmarked {
+    final locator = _locator;
+    return locator != null &&
+        _bookmarks.any((bookmark) => bookmark.id == locator.anchor.id);
+  }
+
+  Future<bool> toggleBookmark() async {
+    final repository = _bookmarkRepository;
+    final locator = _locator;
+    if (repository == null || locator == null) return false;
+    final index = _bookmarks.indexWhere(
+      (bookmark) => bookmark.id == locator.anchor.id,
+    );
+    try {
+      if (index >= 0) {
+        await repository.delete(locator.anchor.id);
+        _bookmarks = List.unmodifiable([
+          ..._bookmarks.take(index),
+          ..._bookmarks.skip(index + 1),
+        ]);
+      } else {
+        final bookmark = Bookmark(
+          locator: locator,
+          createdAt: DateTime.now().toUtc(),
+        );
+        await repository.save(bookmark);
+        _bookmarks = List.unmodifiable([bookmark, ..._bookmarks]);
+      }
+      _notify();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteBookmark(String bookmarkId) async {
+    final repository = _bookmarkRepository;
+    if (repository == null) return false;
+    try {
+      await repository.delete(bookmarkId);
+      _bookmarks = List.unmodifiable(
+        _bookmarks.where((bookmark) => bookmark.id != bookmarkId),
+      );
+      _notify();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   bool isHighlighted(TextAnchor range) =>
@@ -248,7 +319,13 @@ final class ReaderViewModel extends ChangeNotifier {
     if (text.isEmpty) return 'Passage unavailable';
     final start = anchor.startOffset.clamp(0, text.length);
     final end = anchor.endOffset.clamp(start, text.length);
-    final preview = text.substring(start, end).replaceAll(RegExp(r'\s+'), ' ');
+    final previewStart = start == end
+        ? (start - 40).clamp(0, text.length)
+        : start;
+    final previewEnd = start == end ? (start + 80).clamp(0, text.length) : end;
+    final preview = text
+        .substring(previewStart, previewEnd)
+        .replaceAll(RegExp(r'\s+'), ' ');
     if (preview.isEmpty) return 'Passage unavailable';
     return preview.length <= 120 ? preview : '${preview.substring(0, 117)}…';
   }

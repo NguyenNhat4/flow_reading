@@ -1,9 +1,11 @@
 import 'package:flow_reading/domain/models/book_models.dart';
+import 'package:flow_reading/domain/models/bookmark.dart';
 import 'package:flow_reading/domain/models/reader_note.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
+import 'package:flow_reading/domain/repositories/bookmark_repository.dart';
 import 'package:flow_reading/domain/repositories/note_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
@@ -33,8 +35,10 @@ void main() {
           body: ReaderSavedItemsPanel(
             viewModel: viewModel,
             onOpenNote: (note) => opened = note,
+            onOpenBookmark: (_) {},
             onEditNote: (note) => edited = note,
             onDeleteNote: (_) async => true,
+            onDeleteBookmark: (_) async => true,
           ),
         ),
       ),
@@ -54,6 +58,60 @@ void main() {
     viewModel.dispose();
   });
 
+  testWidgets('lists, opens, and removes bookmarks from their tab', (
+    tester,
+  ) async {
+    final bookmark = Bookmark(
+      locator: ReadingLocator(
+        anchor: TextAnchor(
+          bookId: 'book',
+          chapterId: 'chapter',
+          blockId: 'block',
+          startOffset: 2,
+          endOffset: 2,
+        ),
+      ),
+      createdAt: DateTime.utc(2026),
+    );
+    final viewModel = _viewModel(
+      _Notes(const []),
+      bookmarks: _Bookmarks([bookmark]),
+    );
+    await viewModel.load();
+    Bookmark? opened;
+    Bookmark? removed;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReaderSavedItemsPanel(
+            viewModel: viewModel,
+            onOpenNote: (_) {},
+            onOpenBookmark: (value) => opened = value,
+            onEditNote: (_) {},
+            onDeleteNote: (_) async => true,
+            onDeleteBookmark: (value) async {
+              removed = value;
+              return true;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Bookmarks'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chapter'), findsOneWidget);
+    expect(find.textContaining('Text passage'), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('saved-bookmark-${bookmark.id}')));
+    expect(opened, same(bookmark));
+
+    await tester.tap(find.byTooltip('Remove bookmark'));
+    await tester.pump();
+    expect(removed, same(bookmark));
+    viewModel.dispose();
+  });
+
   testWidgets('uses a bounded panel in portrait and landscape', (tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     final viewModel = _viewModel(_Notes(const []));
@@ -67,8 +125,10 @@ void main() {
             body: ReaderSavedItemsPanel(
               viewModel: viewModel,
               onOpenNote: (_) {},
+              onOpenBookmark: (_) {},
               onEditNote: (_) {},
               onDeleteNote: (_) async => true,
+              onDeleteBookmark: (_) async => true,
             ),
           ),
         ),
@@ -80,7 +140,10 @@ void main() {
   });
 }
 
-ReaderViewModel _viewModel(NoteRepository notes) => ReaderViewModel(
+ReaderViewModel _viewModel(
+  NoteRepository notes, {
+  BookmarkRepository? bookmarks,
+}) => ReaderViewModel(
   book: BookSummary(
     id: 'book',
     title: 'Book',
@@ -90,6 +153,7 @@ ReaderViewModel _viewModel(NoteRepository notes) => ReaderViewModel(
   bookRepository: _Books(),
   positionRepository: _Positions(),
   settingsRepository: _Settings(),
+  bookmarkRepository: bookmarks,
   noteRepository: notes,
 );
 
@@ -128,6 +192,20 @@ final class _Notes implements NoteRepository {
 
   @override
   Future<void> save(ReaderNote note) async {}
+}
+
+final class _Bookmarks implements BookmarkRepository {
+  _Bookmarks(this.bookmarks);
+  final List<Bookmark> bookmarks;
+
+  @override
+  Future<void> delete(String bookmarkId) async {}
+
+  @override
+  Future<List<Bookmark>> listForBook(String bookId) async => bookmarks;
+
+  @override
+  Future<void> save(Bookmark bookmark) async {}
 }
 
 final class _Books implements BookRepository {

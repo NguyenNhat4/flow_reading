@@ -1,4 +1,5 @@
 import 'package:flow_reading/domain/repositories/book_file_storage.dart';
+import 'package:flow_reading/domain/repositories/bookmark_repository.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/repositories/epub_picker.dart';
 import 'package:flow_reading/domain/repositories/highlight_repository.dart';
@@ -16,6 +17,7 @@ final class AppDependencies {
   const AppDependencies({
     required this.bookRepository,
     required this.bookFileStorage,
+    required this.bookmarkRepository,
     required this.epubPicker,
     required this.importBook,
     required this.highlightRepository,
@@ -28,6 +30,7 @@ final class AppDependencies {
 
   final BookRepository bookRepository;
   final BookFileStorage bookFileStorage;
+  final BookmarkRepository bookmarkRepository;
   final EpubPicker epubPicker;
   final ImportBookUseCase importBook;
   final HighlightRepository highlightRepository;
@@ -48,6 +51,7 @@ final class AppDependencies {
   ReaderViewModel createReaderViewModel(BookSummary book) => ReaderViewModel(
     book: book,
     bookRepository: bookRepository,
+    bookmarkRepository: bookmarkRepository,
     positionRepository: positionRepository,
     settingsRepository: settingsRepository,
     highlightRepository: highlightRepository,

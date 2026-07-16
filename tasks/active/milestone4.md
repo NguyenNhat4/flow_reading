@@ -31,6 +31,8 @@
 
 ## TASK-403 — Implement bookmarks
 
+**Status:** Complete
+
 **Priority:** P2
 
 **Acceptance criteria:**

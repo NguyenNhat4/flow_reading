@@ -152,14 +152,27 @@ class _ReaderScreenState extends State<ReaderScreen>
       builder: (sheetContext) => ReaderSavedItemsPanel(
         viewModel: widget.viewModel,
         onOpenNote: (note) => Navigator.of(sheetContext).pop(note.range),
+        onOpenBookmark: (bookmark) =>
+            Navigator.of(sheetContext).pop(bookmark.locator.anchor),
         onEditNote: (note) => _editNote(note.range),
         onDeleteNote: (note) => widget.viewModel.deleteNote(note.id),
+        onDeleteBookmark: (bookmark) =>
+            widget.viewModel.deleteBookmark(bookmark.id),
       ),
     );
     if (anchor == null || !mounted) return;
     if (!widget.viewModel.navigateToAnchor(anchor)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('This note passage could not be opened.')),
+      );
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    final saved = await widget.viewModel.toggleBookmark();
+    if (!saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The bookmark could not be updated.')),
       );
     }
   }
@@ -207,6 +220,19 @@ class _ReaderScreenState extends State<ReaderScreen>
                       tooltip: 'Saved items',
                       onPressed: viewModel.isLoaded ? _showSavedItems : null,
                       icon: const Icon(Icons.collections_bookmark_outlined),
+                    ),
+                    IconButton(
+                      tooltip: viewModel.isCurrentPositionBookmarked
+                          ? 'Remove bookmark'
+                          : 'Add bookmark',
+                      onPressed: viewModel.locator == null
+                          ? null
+                          : _toggleBookmark,
+                      icon: Icon(
+                        viewModel.isCurrentPositionBookmarked
+                            ? Icons.bookmark
+                            : Icons.bookmark_border,
+                      ),
                     ),
                     PopupMenuButton<_ReaderMenuAction>(
                       tooltip: 'More reader actions',
