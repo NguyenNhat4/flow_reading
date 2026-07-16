@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flow_reading/data/services/app_database.dart';
+import 'package:flow_reading/data/services/search_segments.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
@@ -44,6 +45,27 @@ final class SqliteBookRepository implements BookRepository {
           'schema_version': 1,
           'content_json': jsonEncode(chapter.toJson()),
         });
+        for (final segment in searchableSegments(book.id, chapter)) {
+          await transaction.rawInsert(
+            '''INSERT INTO search_segments
+(segment_id, book_id, chapter_id, block_id, plain_text)
+VALUES (?, ?, ?, ?, ?)''',
+            [
+              segment.segmentId,
+              segment.bookId,
+              segment.chapterId,
+              segment.blockId,
+              segment.plainText,
+            ],
+          );
+          for (final term in indexedSearchTerms(segment.plainText)) {
+            await transaction.rawInsert(
+              '''INSERT INTO search_terms (segment_id, term, start_offset)
+VALUES (?, ?, ?)''',
+              [segment.segmentId, term.term, term.startOffset],
+            );
+          }
+        }
       }
     });
   });
@@ -174,6 +196,11 @@ ORDER BY chapters.spine_order''',
   Future<void> delete(String bookId) => _guard(() async {
     final database = await appDatabase.open();
     await database.transaction((transaction) async {
+      await transaction.delete(
+        'search_segments',
+        where: 'book_id = ?',
+        whereArgs: [bookId],
+      );
       await transaction.delete('books', where: 'id = ?', whereArgs: [bookId]);
     });
   });

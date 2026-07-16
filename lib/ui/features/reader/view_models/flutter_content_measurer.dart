@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
+import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/use_cases/paginate_chapter.dart';
 import 'package:flutter/material.dart';
 
@@ -140,6 +141,8 @@ final class FlutterContentMeasurer implements ContentMeasurer {
     int? selectedStartOffset,
     int? selectedEndOffset,
     Color? selectionColor,
+    List<TextAnchor> highlights = const [],
+    Color? highlightColor,
   }) {
     if (block is ImageBlock) {
       throw ArgumentError.value(block, 'block', 'images do not contain text');
@@ -157,31 +160,84 @@ final class FlutterContentMeasurer implements ContentMeasurer {
     }
     final displayStart = projection.displayOffsetForSource(startOffset);
     final displayEnd = projection.displayOffsetForSource(endOffset);
+    final boundaries = <int>{startOffset, endOffset};
     if (selectedStartOffset != null &&
         selectedEndOffset != null &&
-        selectionColor != null &&
-        selectedStartOffset < endOffset &&
-        selectedEndOffset > startOffset) {
-      final selectedStart = math.max(startOffset, selectedStartOffset);
-      final selectedEnd = math.min(endOffset, selectedEndOffset);
-      final selectedDisplayStart = projection.displayOffsetForSource(
-        selectedStart,
-      );
-      final selectedDisplayEnd = projection.displayOffsetForSource(selectedEnd);
-      return TextSpan(
-        children: [
-          projection.spanBetween(displayStart, selectedDisplayStart),
-          TextSpan(
-            style: TextStyle(backgroundColor: selectionColor),
-            children: [
-              projection.spanBetween(selectedDisplayStart, selectedDisplayEnd),
-            ],
-          ),
-          projection.spanBetween(selectedDisplayEnd, displayEnd),
-        ],
-      );
+        selectionColor != null) {
+      boundaries
+        ..add(selectedStartOffset.clamp(startOffset, endOffset))
+        ..add(selectedEndOffset.clamp(startOffset, endOffset));
     }
-    return projection.spanBetween(displayStart, displayEnd);
+    if (highlightColor != null) {
+      for (final highlight in highlights) {
+        if (highlight.startOffset < endOffset &&
+            highlight.endOffset > startOffset) {
+          boundaries
+            ..add(highlight.startOffset.clamp(startOffset, endOffset))
+            ..add(highlight.endOffset.clamp(startOffset, endOffset));
+        }
+      }
+    }
+    final offsets = boundaries.toList()..sort();
+    if (offsets.length == 2) {
+      return projection.spanBetween(displayStart, displayEnd);
+    }
+    return TextSpan(
+      children: [
+        for (var index = 0; index < offsets.length - 1; index++)
+          _decoratedSpan(
+            projection: projection,
+            startOffset: offsets[index],
+            endOffset: offsets[index + 1],
+            selectedStartOffset: selectedStartOffset,
+            selectedEndOffset: selectedEndOffset,
+            selectionColor: selectionColor,
+            highlights: highlights,
+            highlightColor: highlightColor,
+          ),
+      ],
+    );
+  }
+
+  static TextSpan _decoratedSpan({
+    required _TextProjection projection,
+    required int startOffset,
+    required int endOffset,
+    required int? selectedStartOffset,
+    required int? selectedEndOffset,
+    required Color? selectionColor,
+    required List<TextAnchor> highlights,
+    required Color? highlightColor,
+  }) {
+    final selected =
+        selectionColor != null &&
+        selectedStartOffset != null &&
+        selectedEndOffset != null &&
+        selectedStartOffset < endOffset &&
+        selectedEndOffset > startOffset;
+    final highlighted =
+        !selected &&
+        highlightColor != null &&
+        highlights.any(
+          (highlight) =>
+              highlight.startOffset < endOffset &&
+              highlight.endOffset > startOffset,
+        );
+    final span = projection.spanBetween(
+      projection.displayOffsetForSource(startOffset),
+      projection.displayOffsetForSource(endOffset),
+    );
+    final color = selected
+        ? selectionColor
+        : highlighted
+        ? highlightColor
+        : null;
+    return color == null
+        ? span
+        : TextSpan(
+            style: TextStyle(backgroundColor: color),
+            children: [span],
+          );
   }
 
   /// Maps a display character in a rendered fragment back to its canonical

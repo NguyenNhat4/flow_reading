@@ -14,6 +14,7 @@ enum ReaderAction {
   explain,
   summarize,
   explainGrammar,
+  addNote,
   highlight,
   copy,
 }
@@ -53,6 +54,7 @@ const passageReaderActions = <ReaderAction>[
   ReaderAction.translate,
   ReaderAction.summarize,
   ReaderAction.explainGrammar,
+  ReaderAction.addNote,
   ReaderAction.highlight,
   ReaderAction.copy,
 ];
@@ -66,13 +68,16 @@ extension ReaderActionPresentation on ReaderAction {
     ReaderAction.explain => 'Explain',
     ReaderAction.summarize => 'Summarize',
     ReaderAction.explainGrammar => 'Explain Grammar',
+    ReaderAction.addNote => 'Add note',
     ReaderAction.highlight => 'Highlight',
     ReaderAction.copy => 'Copy',
   };
 
   /// Whether this action requires network access when opened.
   bool get requiresInternet => switch (this) {
-    ReaderAction.highlight || ReaderAction.copy => false,
+    ReaderAction.addNote ||
+    ReaderAction.highlight ||
+    ReaderAction.copy => false,
     _ => true,
   };
 }
@@ -82,11 +87,13 @@ class ReaderActionMenu extends StatelessWidget {
   const ReaderActionMenu({
     required this.actions,
     required this.onSelected,
+    this.removeHighlight = false,
     super.key,
   });
 
   final List<ReaderAction> actions;
   final ValueChanged<ReaderAction> onSelected;
+  final bool removeHighlight;
 
   @override
   Widget build(BuildContext context) {
@@ -108,16 +115,19 @@ class ReaderActionMenu extends StatelessWidget {
                   icon: action.requiresInternet
                       ? const Icon(Icons.cloud_outlined, size: 16)
                       : const SizedBox.shrink(),
-                  label: Text(
-                    action.requiresInternet
-                        ? '${action.label} · Online'
-                        : action.label,
-                  ),
+                  label: Text(_label(action)),
                 ),
               ),
           ],
         ),
       ),
     );
+  }
+
+  String _label(ReaderAction action) {
+    if (action == ReaderAction.highlight && removeHighlight) {
+      return 'Remove highlight';
+    }
+    return action.requiresInternet ? '${action.label} · Online' : action.label;
   }
 }

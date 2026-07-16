@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flow_reading/domain/models/book_models.dart';
+import 'package:flow_reading/domain/models/highlight.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/use_cases/paginate_chapter.dart';
@@ -20,6 +21,7 @@ class SwipeableReader extends StatefulWidget {
     this.onWordSelected,
     this.onPassageSelected,
     this.onActionSelected,
+    this.highlights = const [],
     super.key,
   });
 
@@ -36,6 +38,7 @@ class SwipeableReader extends StatefulWidget {
 
   /// Opens a workflow for an action and its stable canonical selection.
   final ReaderActionHandler? onActionSelected;
+  final List<Highlight> highlights;
 
   @override
   State<SwipeableReader> createState() => _SwipeableReaderState();
@@ -129,6 +132,7 @@ class _SwipeableReaderState extends State<SwipeableReader> {
                   measurer: _measurer,
                   wordSelection: _wordSelection,
                   passageSelection: _passageSelection,
+                  highlights: widget.highlights,
                   onWordSelected: _selectWord,
                   onPassageSelected: _selectPassage,
                 ),
@@ -146,6 +150,10 @@ class _SwipeableReaderState extends State<SwipeableReader> {
                       actions: _passageSelection == null
                           ? wordReaderActions
                           : passageReaderActions,
+                      removeHighlight: widget.highlights.any(
+                        (highlight) =>
+                            highlight.id == _selectedRequest?.anchor.id,
+                      ),
                       onSelected: _performAction,
                     )
                   : pages == null || pages.isEmpty
@@ -388,6 +396,7 @@ class _ReaderPageContent extends StatelessWidget {
     required this.measurer,
     required this.wordSelection,
     required this.passageSelection,
+    required this.highlights,
     required this.onWordSelected,
     required this.onPassageSelected,
     super.key,
@@ -398,6 +407,7 @@ class _ReaderPageContent extends StatelessWidget {
   final FlutterContentMeasurer measurer;
   final WordSelection? wordSelection;
   final PassageSelection? passageSelection;
+  final List<Highlight> highlights;
   final ValueChanged<WordSelection?> onWordSelected;
   final ValueChanged<PassageSelection> onPassageSelected;
 
@@ -435,6 +445,13 @@ class _ReaderPageContent extends StatelessWidget {
           measurer: measurer,
           wordSelection: wordSelection,
           passageSelection: passageSelection,
+          highlights: highlights
+              .where(
+                (highlight) =>
+                    highlight.range.chapterId == block.chapterId &&
+                    highlight.range.blockId == block.id,
+              )
+              .toList(growable: false),
           onWordSelected: onWordSelected,
           onPassageSelected: onPassageSelected,
         ),
@@ -477,6 +494,7 @@ class _BlockFragment extends StatelessWidget {
     required this.measurer,
     required this.wordSelection,
     required this.passageSelection,
+    required this.highlights,
     required this.onWordSelected,
     required this.onPassageSelected,
   });
@@ -489,6 +507,7 @@ class _BlockFragment extends StatelessWidget {
   final FlutterContentMeasurer measurer;
   final WordSelection? wordSelection;
   final PassageSelection? passageSelection;
+  final List<Highlight> highlights;
   final ValueChanged<WordSelection?> onWordSelected;
   final ValueChanged<PassageSelection> onPassageSelected;
 
@@ -529,6 +548,8 @@ class _BlockFragment extends StatelessWidget {
       selectedStartOffset: selectsBlock ? selectedAnchor.startOffset : null,
       selectedEndOffset: selectsBlock ? selectedAnchor.endOffset : null,
       selectionColor: Theme.of(context).colorScheme.primaryContainer,
+      highlights: highlights.map((highlight) => highlight.range).toList(),
+      highlightColor: Theme.of(context).colorScheme.tertiaryContainer,
     );
     final selectedHere =
         selectsBlock &&

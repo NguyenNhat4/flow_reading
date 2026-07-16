@@ -158,6 +158,21 @@ annotations, bookmarks, notes, AI artifacts, chats, glossary terms, reader
 preferences, and a future sync outbox. Their references must use stable anchors,
 not visual pages. Creating the outbox does not enable synchronization.
 
+### Local full-text search
+
+Schema version 2 adds a portable local inverted index:
+
+- `search_segments` stores one searchable text-bearing canonical block with
+  `segmentId`, `bookId`, `chapterId`, `blockId`, and `plainText`.
+- `search_terms` stores normalized terms and their earliest UTF-16 offset for
+  indexed exact-term and prefix lookup.
+
+The import transaction writes canonical content and search rows together.
+Upgrading an existing version-1 database backfills its stored chapter JSON.
+Deleting a book deletes its indexed segments and terms. Search requires every
+entered term, treats the final term as a prefix, and returns a collapsed
+`ReadingLocator` at the earliest match plus a surrounding-text excerpt.
+
 ### Reader settings
 
 `ReaderSettings`
@@ -207,6 +222,26 @@ Types:
 - `bookmark`
 - `highlight`
 - `note`
+
+Milestone 4 stores highlights in the `annotations` table with
+`type = highlight`. A highlight ID is the ID of its exact canonical
+`TextAnchor`, so saving the same source range is idempotent and toggling that
+range can remove it. Highlight paint is temporary reader presentation state:
+font changes, viewport changes, and repagination never rewrite the stored
+range.
+
+Notes use the dedicated `notes` table. Their IDs also come from the exact
+canonical range, so saving another note for that range edits the existing note
+while preserving its creation time. Passage previews are derived from stored
+canonical chapter content instead of being duplicated in note rows. Opening a
+note converts the range start into a collapsed reading locator and repaginates
+to the containing page.
+
+Bookmarks use the dedicated `bookmarks` table and accept only collapsed
+`ReadingLocator` anchors. Their IDs come from that logical position, so adding
+the same locator does not create duplicates. The Saved panel derives bookmark
+chapter labels and surrounding text from canonical content, and opening a
+bookmark resolves its anchor against newly generated page boundaries.
 
 ### Translation
 

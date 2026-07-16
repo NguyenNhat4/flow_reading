@@ -1,6 +1,10 @@
 import 'package:flow_reading/domain/repositories/book_file_storage.dart';
+import 'package:flow_reading/domain/repositories/bookmark_repository.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
+import 'package:flow_reading/domain/repositories/book_search_repository.dart';
 import 'package:flow_reading/domain/repositories/epub_picker.dart';
+import 'package:flow_reading/domain/repositories/highlight_repository.dart';
+import 'package:flow_reading/domain/repositories/note_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:flow_reading/domain/repositories/table_of_contents_repository.dart';
@@ -14,8 +18,12 @@ final class AppDependencies {
   const AppDependencies({
     required this.bookRepository,
     required this.bookFileStorage,
+    required this.bookmarkRepository,
+    required this.bookSearchRepository,
     required this.epubPicker,
     required this.importBook,
+    required this.highlightRepository,
+    required this.noteRepository,
     required this.removeBook,
     required this.positionRepository,
     required this.settingsRepository,
@@ -24,8 +32,12 @@ final class AppDependencies {
 
   final BookRepository bookRepository;
   final BookFileStorage bookFileStorage;
+  final BookmarkRepository bookmarkRepository;
+  final BookSearchRepository bookSearchRepository;
   final EpubPicker epubPicker;
   final ImportBookUseCase importBook;
+  final HighlightRepository highlightRepository;
+  final NoteRepository noteRepository;
   final RemoveBookUseCase removeBook;
   final ReadingPositionRepository positionRepository;
   final ReaderSettingsRepository settingsRepository;
@@ -42,8 +54,12 @@ final class AppDependencies {
   ReaderViewModel createReaderViewModel(BookSummary book) => ReaderViewModel(
     book: book,
     bookRepository: bookRepository,
+    bookmarkRepository: bookmarkRepository,
+    bookSearchRepository: bookSearchRepository,
     positionRepository: positionRepository,
     settingsRepository: settingsRepository,
+    highlightRepository: highlightRepository,
+    noteRepository: noteRepository,
     tableOfContentsRepository: tableOfContentsRepository,
   );
 }

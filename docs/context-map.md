@@ -26,7 +26,8 @@ Do not read every linked document by default.
 | Reader selection and actions | `docs/invariants.md`, `docs/reader-pagination-layout.md` | Reader UI feature |
 | Reader settings and themes | Reader settings in `docs/data-model.md` | Domain settings, reader UI, data repository |
 | Local persistence | Local persistence in `docs/data-model.md` | Data repositories and services |
-| Highlights, notes, AI, translation, or sync | `docs/invariants.md`, relevant product requirement | Future domain/data/UI feature |
+| In-book full-text search | Local full-text search in `docs/data-model.md`, `docs/invariants.md` | Search repository, book persistence, reader UI |
+| Highlights, notes, bookmarks, AI, translation, or sync | `docs/invariants.md`, `docs/data-model.md`, relevant product requirement | Domain model/repository, data repository, reader UI |
 | Product clarification | Relevant requirement in `docs/product-plan.md` | Varies |
 
 ## Documentation roles
