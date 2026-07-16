@@ -208,6 +208,13 @@ Types:
 - `highlight`
 - `note`
 
+Milestone 4 stores highlights in the `annotations` table with
+`type = highlight`. A highlight ID is the ID of its exact canonical
+`TextAnchor`, so saving the same source range is idempotent and toggling that
+range can remove it. Highlight paint is temporary reader presentation state:
+font changes, viewport changes, and repagination never rewrite the stored
+range.
+
 ### Translation
 
 `Translation`

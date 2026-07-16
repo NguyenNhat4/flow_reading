@@ -1,8 +1,10 @@
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
+import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/use_cases/paginate_chapter.dart';
 import 'package:flow_reading/ui/features/reader/view_models/flutter_content_measurer.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 
 void main() {
   const measurer = FlutterContentMeasurer();
@@ -130,6 +132,37 @@ void main() {
     expect(smallResult.layoutKey, isNot(largeResult.layoutKey));
   });
 
+  test(
+    'highlight decoration follows canonical offsets without changing text',
+    () {
+      const block = ParagraphBlock(
+        id: 'paragraph',
+        chapterId: 'chapter',
+        order: 0,
+        spans: [InlineTextSpan(text: 'Read locally.')],
+      );
+      final span = measurer.textSpanForRange(
+        block: block,
+        settings: ReaderSettings.defaults,
+        startOffset: 0,
+        endOffset: block.text.length,
+        highlights: [
+          TextAnchor(
+            bookId: 'book',
+            chapterId: 'chapter',
+            blockId: 'paragraph',
+            startOffset: 5,
+            endOffset: 12,
+          ),
+        ],
+        highlightColor: Colors.yellow,
+      );
+
+      expect(span.toPlainText(), 'Read locally.');
+      expect(_backgroundText(span, Colors.yellow), 'locally');
+    },
+  );
+
   test('image height is capped to the usable viewport', () {
     const image = ImageBlock(
       id: 'image',
@@ -149,6 +182,21 @@ void main() {
     expect(measurement.endOffset, 1);
     expect(measurement.height, layout.contentHeight);
   });
+}
+
+String _backgroundText(TextSpan span, Color color) {
+  final buffer = StringBuffer();
+  void visit(InlineSpan current, Color? inherited) {
+    if (current is! TextSpan) return;
+    final background = current.style?.backgroundColor ?? inherited;
+    if (background == color && current.text != null) buffer.write(current.text);
+    for (final child in current.children ?? const <InlineSpan>[]) {
+      visit(child, background);
+    }
+  }
+
+  visit(span, null);
+  return buffer.toString();
 }
 
 bool _splitsSurrogatePair(String text, int offset) {

@@ -1,6 +1,7 @@
 import 'package:flow_reading/domain/repositories/book_file_storage.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/repositories/epub_picker.dart';
+import 'package:flow_reading/domain/repositories/highlight_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:flow_reading/domain/repositories/table_of_contents_repository.dart';
@@ -16,6 +17,7 @@ final class AppDependencies {
     required this.bookFileStorage,
     required this.epubPicker,
     required this.importBook,
+    required this.highlightRepository,
     required this.removeBook,
     required this.positionRepository,
     required this.settingsRepository,
@@ -26,6 +28,7 @@ final class AppDependencies {
   final BookFileStorage bookFileStorage;
   final EpubPicker epubPicker;
   final ImportBookUseCase importBook;
+  final HighlightRepository highlightRepository;
   final RemoveBookUseCase removeBook;
   final ReadingPositionRepository positionRepository;
   final ReaderSettingsRepository settingsRepository;
@@ -44,6 +47,7 @@ final class AppDependencies {
     bookRepository: bookRepository,
     positionRepository: positionRepository,
     settingsRepository: settingsRepository,
+    highlightRepository: highlightRepository,
     tableOfContentsRepository: tableOfContentsRepository,
   );
 }

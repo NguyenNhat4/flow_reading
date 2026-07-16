@@ -1,4 +1,5 @@
 import 'package:flow_reading/data/repositories/sqlite_book_repository.dart';
+import 'package:flow_reading/data/repositories/sqlite_highlight_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_reader_settings_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_reading_position_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_table_of_contents_repository.dart';
@@ -38,6 +39,7 @@ Future<AppDependencies> _createDependencies() async {
       parser: const LocalEpubContentParser(),
       languageDetection: languageDetection,
     ),
+    highlightRepository: SqliteHighlightRepository(database),
     removeBook: RemoveBookUseCase(repository: repository, storage: storage),
     positionRepository: SqliteReadingPositionRepository(database),
     settingsRepository: SqliteReaderSettingsRepository(database),

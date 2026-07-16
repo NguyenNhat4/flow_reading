@@ -1,7 +1,10 @@
 import 'package:flow_reading/domain/models/book_models.dart';
+import 'package:flow_reading/domain/models/highlight.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
+import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
+import 'package:flow_reading/domain/repositories/highlight_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:flow_reading/domain/repositories/table_of_contents_repository.dart';
@@ -37,13 +40,53 @@ void main() {
     expect(positions.saved.last.locator.anchor.startOffset, 0);
     viewModel.dispose();
   });
+
+  test('loads and toggles exact anchored highlights', () async {
+    final highlights = _HighlightRepository();
+    final viewModel = _viewModel(highlights: highlights);
+    await viewModel.load();
+    final range = TextAnchor(
+      bookId: 'book',
+      chapterId: 'chapter',
+      blockId: 'block',
+      startOffset: 0,
+      endOffset: 4,
+    );
+
+    expect(await viewModel.toggleHighlight(range), isTrue);
+    expect(viewModel.isHighlighted(range), isTrue);
+    expect(highlights.saved.single.range.id, range.id);
+
+    expect(await viewModel.toggleHighlight(range), isTrue);
+    expect(viewModel.isHighlighted(range), isFalse);
+    expect(highlights.deleted, [range.id]);
+    viewModel.dispose();
+  });
+
+  test('highlight loading failure does not prevent reading', () async {
+    final viewModel = _viewModel(
+      highlights: _HighlightRepository(loadError: StateError('broken')),
+    );
+
+    await viewModel.load();
+
+    expect(viewModel.isLoaded, isTrue);
+    expect(viewModel.loadError, isNull);
+    expect(viewModel.highlightLoadError, isA<StateError>());
+    expect(viewModel.chapters, isNotEmpty);
+    viewModel.dispose();
+  });
 }
 
-ReaderViewModel _viewModel({_PositionRepository? positions}) => ReaderViewModel(
+ReaderViewModel _viewModel({
+  _PositionRepository? positions,
+  _HighlightRepository? highlights,
+}) => ReaderViewModel(
   book: _summary,
   bookRepository: _BookRepository(),
   positionRepository: positions ?? _PositionRepository(),
   settingsRepository: _SettingsRepository(),
+  highlightRepository: highlights,
   tableOfContentsRepository: _TocRepository(),
 );
 
@@ -118,4 +161,25 @@ final class _TocRepository implements TableOfContentsRepository {
       reference: ChapterReference(chapterId: 'chapter', blockId: 'block'),
     ),
   ];
+}
+
+final class _HighlightRepository implements HighlightRepository {
+  _HighlightRepository({this.loadError});
+
+  final Object? loadError;
+  final List<Highlight> saved = [];
+  final List<String> deleted = [];
+
+  @override
+  Future<void> delete(String highlightId) async => deleted.add(highlightId);
+
+  @override
+  Future<List<Highlight>> listForBook(String bookId) async {
+    final error = loadError;
+    if (error != null) throw error;
+    return List.unmodifiable(saved);
+  }
+
+  @override
+  Future<void> save(Highlight highlight) async => saved.add(highlight);
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flow_reading/ui/core/reader_theme.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_layout_controls.dart';
+import 'package:flow_reading/ui/features/reader/views/reader_action_menu.dart';
 import 'package:flow_reading/ui/features/reader/views/swipeable_reader.dart';
 import 'package:flow_reading/ui/features/reader/views/table_of_contents.dart';
 import 'package:flutter/material.dart';
@@ -81,6 +82,24 @@ class _ReaderScreenState extends State<ReaderScreen>
     }
   }
 
+  Future<void> _handleAction(ReaderActionRequest request) async {
+    if (request.action == ReaderAction.highlight) {
+      final saved = await widget.viewModel.toggleHighlight(request.anchor);
+      if (!saved && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The highlight could not be saved.')),
+        );
+      }
+      return;
+    }
+    if (request.action == ReaderAction.copy || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${request.action.label} requires internet access.'),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -127,7 +146,10 @@ class _ReaderScreenState extends State<ReaderScreen>
                     ),
                   ],
                 ),
-                body: _ReaderBody(viewModel: viewModel),
+                body: _ReaderBody(
+                  viewModel: viewModel,
+                  onActionSelected: _handleAction,
+                ),
               ),
             ),
           ),
@@ -138,9 +160,10 @@ class _ReaderScreenState extends State<ReaderScreen>
 }
 
 class _ReaderBody extends StatelessWidget {
-  const _ReaderBody({required this.viewModel});
+  const _ReaderBody({required this.viewModel, required this.onActionSelected});
 
   final ReaderViewModel viewModel;
+  final ReaderActionHandler onActionSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +181,9 @@ class _ReaderBody extends StatelessWidget {
       chapters: viewModel.chapters,
       settings: viewModel.settings,
       initialLocator: viewModel.locator,
+      highlights: viewModel.highlights,
       onPositionChanged: viewModel.showPosition,
+      onActionSelected: onActionSelected,
     );
   }
 }

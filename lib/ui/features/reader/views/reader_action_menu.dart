@@ -82,11 +82,13 @@ class ReaderActionMenu extends StatelessWidget {
   const ReaderActionMenu({
     required this.actions,
     required this.onSelected,
+    this.removeHighlight = false,
     super.key,
   });
 
   final List<ReaderAction> actions;
   final ValueChanged<ReaderAction> onSelected;
+  final bool removeHighlight;
 
   @override
   Widget build(BuildContext context) {
@@ -108,16 +110,19 @@ class ReaderActionMenu extends StatelessWidget {
                   icon: action.requiresInternet
                       ? const Icon(Icons.cloud_outlined, size: 16)
                       : const SizedBox.shrink(),
-                  label: Text(
-                    action.requiresInternet
-                        ? '${action.label} · Online'
-                        : action.label,
-                  ),
+                  label: Text(_label(action)),
                 ),
               ),
           ],
         ),
       ),
     );
+  }
+
+  String _label(ReaderAction action) {
+    if (action == ReaderAction.highlight && removeHighlight) {
+      return 'Remove highlight';
+    }
+    return action.requiresInternet ? '${action.label} · Online' : action.label;
   }
 }
