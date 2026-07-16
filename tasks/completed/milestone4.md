@@ -45,6 +45,8 @@
 
 ## TASK-404 — Implement local full-text search index
 
+**Status:** Complete
+
 **Priority:** P2
 
 Index searchable segments containing:

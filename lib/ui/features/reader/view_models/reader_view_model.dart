@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/bookmark.dart';
+import 'package:flow_reading/domain/models/book_search.dart';
 import 'package:flow_reading/domain/models/highlight.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/reader_note.dart';
@@ -9,6 +10,7 @@ import 'package:flow_reading/domain/models/reading_position.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/repositories/bookmark_repository.dart';
+import 'package:flow_reading/domain/repositories/book_search_repository.dart';
 import 'package:flow_reading/domain/repositories/highlight_repository.dart';
 import 'package:flow_reading/domain/repositories/note_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
@@ -24,6 +26,7 @@ final class ReaderViewModel extends ChangeNotifier {
     required ReadingPositionRepository positionRepository,
     required ReaderSettingsRepository settingsRepository,
     BookmarkRepository? bookmarkRepository,
+    BookSearchRepository? bookSearchRepository,
     HighlightRepository? highlightRepository,
     NoteRepository? noteRepository,
     TableOfContentsRepository? tableOfContentsRepository,
@@ -33,6 +36,7 @@ final class ReaderViewModel extends ChangeNotifier {
     positionRepository,
     settingsRepository,
     bookmarkRepository,
+    bookSearchRepository,
     highlightRepository,
     noteRepository,
     tableOfContentsRepository,
@@ -44,6 +48,7 @@ final class ReaderViewModel extends ChangeNotifier {
     this._positionRepository,
     this._settingsRepository,
     this._bookmarkRepository,
+    this._bookSearchRepository,
     this._highlightRepository,
     this._noteRepository,
     this._tableOfContentsRepository,
@@ -54,6 +59,7 @@ final class ReaderViewModel extends ChangeNotifier {
   final ReadingPositionRepository _positionRepository;
   final ReaderSettingsRepository _settingsRepository;
   final BookmarkRepository? _bookmarkRepository;
+  final BookSearchRepository? _bookSearchRepository;
   final HighlightRepository? _highlightRepository;
   final NoteRepository? _noteRepository;
   final TableOfContentsRepository? _tableOfContentsRepository;
@@ -71,6 +77,11 @@ final class ReaderViewModel extends ChangeNotifier {
   Object? _noteLoadError;
   Object? _bookmarkLoadError;
   Object? _loadError;
+  List<BookSearchResult> _searchResults = const [];
+  Object? _searchError;
+  String _searchQuery = '';
+  int _searchGeneration = 0;
+  bool _isSearching = false;
   int _readerGeneration = 0;
   bool _loaded = false;
   bool _disposed = false;
@@ -86,6 +97,10 @@ final class ReaderViewModel extends ChangeNotifier {
   Object? get noteLoadError => _noteLoadError;
   Object? get bookmarkLoadError => _bookmarkLoadError;
   Object? get loadError => _loadError;
+  List<BookSearchResult> get searchResults => _searchResults;
+  Object? get searchError => _searchError;
+  String get searchQuery => _searchQuery;
+  bool get isSearching => _isSearching;
   int get readerGeneration => _readerGeneration;
   bool get isLoaded => _loaded;
 
@@ -195,6 +210,46 @@ final class ReaderViewModel extends ChangeNotifier {
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<void> searchBook(String query) async {
+    final generation = ++_searchGeneration;
+    final normalized = query.trim();
+    _searchQuery = normalized;
+    _searchError = null;
+    if (normalized.isEmpty) {
+      _searchResults = const [];
+      _isSearching = false;
+      _notify();
+      return;
+    }
+    final repository = _bookSearchRepository;
+    if (repository == null) {
+      _searchResults = const [];
+      _searchError = StateError('Book search is unavailable');
+      _isSearching = false;
+      _notify();
+      return;
+    }
+    _isSearching = true;
+    _notify();
+    try {
+      final results = await repository.search(
+        bookId: book.id,
+        query: normalized,
+      );
+      if (generation != _searchGeneration) return;
+      _searchResults = List.unmodifiable(results);
+    } catch (error) {
+      if (generation != _searchGeneration) return;
+      _searchResults = const [];
+      _searchError = error;
+    } finally {
+      if (generation == _searchGeneration) {
+        _isSearching = false;
+        _notify();
+      }
     }
   }
 

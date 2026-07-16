@@ -158,6 +158,21 @@ annotations, bookmarks, notes, AI artifacts, chats, glossary terms, reader
 preferences, and a future sync outbox. Their references must use stable anchors,
 not visual pages. Creating the outbox does not enable synchronization.
 
+### Local full-text search
+
+Schema version 2 adds a portable local inverted index:
+
+- `search_segments` stores one searchable text-bearing canonical block with
+  `segmentId`, `bookId`, `chapterId`, `blockId`, and `plainText`.
+- `search_terms` stores normalized terms and their earliest UTF-16 offset for
+  indexed exact-term and prefix lookup.
+
+The import transaction writes canonical content and search rows together.
+Upgrading an existing version-1 database backfills its stored chapter JSON.
+Deleting a book deletes its indexed segments and terms. Search requires every
+entered term, treats the final term as a prefix, and returns a collapsed
+`ReadingLocator` at the earliest match plus a surrounding-text excerpt.
+
 ### Reader settings
 
 `ReaderSettings`

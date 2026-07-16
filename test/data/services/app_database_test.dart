@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flow_reading/data/services/app_database.dart';
+import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -47,6 +49,8 @@ void main() {
         'glossary_terms',
         'reader_preferences',
         'sync_outbox',
+        'search_segments',
+        'search_terms',
       }),
     );
     expect(tables, isNot(contains('pages')));
@@ -54,6 +58,69 @@ void main() {
       (await database.rawQuery('PRAGMA foreign_keys')).single['foreign_keys'],
       1,
     );
+  });
+
+  test('version 2 migration backfills the local search index', () async {
+    final path = '${root.path}/legacy.db';
+    final legacy = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (database, version) async {
+          await database.execute('''
+CREATE TABLE books (
+  id TEXT PRIMARY KEY,
+  content_hash TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  authors_json TEXT NOT NULL,
+  metadata_json TEXT NOT NULL,
+  original_file TEXT NOT NULL,
+  toc_json TEXT NOT NULL,
+  assets_json TEXT NOT NULL,
+  detected_language TEXT,
+  imported_at TEXT NOT NULL
+)''');
+          await database.execute('''
+CREATE TABLE chapters (
+  id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  spine_order INTEGER NOT NULL,
+  source_href TEXT
+)''');
+          await database.execute('''
+CREATE TABLE chapter_content (
+  chapter_id TEXT PRIMARY KEY,
+  schema_version INTEGER NOT NULL,
+  content_json TEXT NOT NULL
+)''');
+        },
+      ),
+    );
+    await legacy.insert('books', _book('legacy'));
+    await legacy.insert('chapters', {
+      'id': 'chapter',
+      'book_id': 'legacy',
+      'title': 'Chapter',
+      'spine_order': 0,
+    });
+    await legacy.insert('chapter_content', {
+      'chapter_id': 'chapter',
+      'schema_version': 1,
+      'content_json': jsonEncode(_legacyChapter.toJson()),
+    });
+    await legacy.close();
+
+    final upgraded = AppDatabase(factory: databaseFactoryFfi, path: path);
+    addTearDown(upgraded.close);
+    final database = await upgraded.open();
+    final rows = await database.rawQuery(
+      '''SELECT segment_id FROM search_terms WHERE term = ?''',
+      ['backfilled'],
+    );
+
+    expect(await database.getVersion(), 2);
+    expect(rows.single['segment_id'], 'block');
   });
 
   test('failed transaction preserves previously stored books', () async {
@@ -73,6 +140,21 @@ void main() {
     expect(rows.map((row) => row['id']), ['book-1']);
   });
 }
+
+const _legacyChapter = Chapter(
+  id: 'chapter',
+  bookId: 'legacy',
+  title: 'Chapter',
+  order: 0,
+  blocks: [
+    ParagraphBlock(
+      id: 'block',
+      chapterId: 'chapter',
+      order: 0,
+      spans: [InlineTextSpan(text: 'Backfilled canonical text.')],
+    ),
+  ],
+);
 
 Map<String, Object?> _book(String id) => {
   'id': id,

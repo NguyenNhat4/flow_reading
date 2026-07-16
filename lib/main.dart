@@ -1,4 +1,5 @@
 import 'package:flow_reading/data/repositories/sqlite_book_repository.dart';
+import 'package:flow_reading/data/repositories/sqlite_book_search_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_bookmark_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_highlight_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_note_repository.dart';
@@ -34,6 +35,7 @@ Future<AppDependencies> _createDependencies() async {
   return AppDependencies(
     bookRepository: repository,
     bookmarkRepository: SqliteBookmarkRepository(database),
+    bookSearchRepository: SqliteBookSearchRepository(database),
     bookFileStorage: storage,
     epubPicker: AndroidEpubPicker(),
     importBook: ImportBookUseCase(

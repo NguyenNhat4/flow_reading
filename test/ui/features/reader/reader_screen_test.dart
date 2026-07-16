@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flow_reading/domain/models/book_models.dart';
+import 'package:flow_reading/domain/models/book_search.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
+import 'package:flow_reading/domain/repositories/book_search_repository.dart';
 import 'package:flow_reading/domain/repositories/reader_settings_repository.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:flow_reading/domain/repositories/table_of_contents_repository.dart';
@@ -515,6 +517,35 @@ void main() {
     expect(saved.startOffset, 0);
   });
 
+  testWidgets('search result navigates to its stable passage', (tester) async {
+    final positions = _PositionRepository();
+    await _pumpReader(
+      tester,
+      books: _BookRepository(),
+      positions: positions,
+      search: _SearchRepository(),
+    );
+
+    await tester.tap(find.byTooltip('More reader actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Search this book'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('reader-search-field')),
+      'account',
+    );
+    await tester.tap(find.byTooltip('Search'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('reader-search-result-block-2')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(positions.saved.last.locator.anchor.chapterId, 'chapter-2');
+    expect(positions.saved.last.locator.anchor.blockId, 'block-2');
+    expect(find.byKey(const ValueKey('reader-search-results')), findsNothing);
+  });
+
   testWidgets('long content advances by stable offsets within a chapter', (
     tester,
   ) async {
@@ -865,6 +896,7 @@ Future<void> _pumpReader(
   required _PositionRepository positions,
   _SettingsRepository? settings,
   TableOfContentsRepository? tableOfContents,
+  BookSearchRepository? search,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -880,12 +912,42 @@ Future<void> _pumpReader(
           bookRepository: books,
           positionRepository: positions,
           settingsRepository: settings ?? _SettingsRepository(),
+          bookSearchRepository: search,
           tableOfContentsRepository: tableOfContents,
         ),
       ),
     ),
   );
   await tester.pumpAndSettle();
+}
+
+final class _SearchRepository implements BookSearchRepository {
+  @override
+  Future<List<BookSearchResult>> search({
+    required String bookId,
+    required String query,
+    int limit = 50,
+  }) async => [
+    BookSearchResult(
+      segment: const SearchableSegment(
+        segmentId: 'block-2',
+        bookId: 'book-id',
+        chapterId: 'chapter-2',
+        blockId: 'block-2',
+        plainText: 'No account required.',
+      ),
+      excerpt: 'No account required.',
+      locator: ReadingLocator(
+        anchor: TextAnchor(
+          bookId: 'book-id',
+          chapterId: 'chapter-2',
+          blockId: 'block-2',
+          startOffset: 3,
+          endOffset: 3,
+        ),
+      ),
+    ),
+  ];
 }
 
 final class _TableOfContentsRepository implements TableOfContentsRepository {

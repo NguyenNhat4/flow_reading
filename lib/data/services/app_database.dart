@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:flow_reading/data/services/search_segments.dart';
+import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:sqflite/sqflite.dart';
 
 final class AppDatabase {
@@ -7,7 +11,7 @@ final class AppDatabase {
 
   AppDatabase._(this._factory, this._path);
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   final DatabaseFactory _factory;
   final String? _path;
@@ -24,7 +28,7 @@ final class AppDatabase {
         onConfigure: (database) async {
           await database.execute('PRAGMA foreign_keys = ON');
         },
-        onCreate: _createVersion1,
+        onCreate: _createLatest,
         onUpgrade: _upgrade,
       ),
     );
@@ -44,6 +48,12 @@ final class AppDatabase {
     int newVersion,
   ) async {
     if (oldVersion < 1) await _createVersion1(database, 1);
+    if (oldVersion < 2) await _createVersion2(database);
+  }
+
+  static Future<void> _createLatest(Database database, int version) async {
+    await _createVersion1(database, 1);
+    await _createVersion2(database);
   }
 
   static Future<void> _createVersion1(Database database, int version) async {
@@ -169,6 +179,68 @@ CREATE TABLE sync_outbox (
       ..execute('CREATE INDEX notes_book ON notes(book_id)')
       ..execute('CREATE INDEX ai_artifacts_book ON ai_artifacts(book_id)')
       ..execute('CREATE INDEX chat_sessions_book ON chat_sessions(book_id)');
+    await batch.commit(noResult: true);
+  }
+
+  static Future<void> _createVersion2(Database database) async {
+    await database.execute('''
+CREATE TABLE search_segments (
+  segment_id TEXT PRIMARY KEY,
+  book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  chapter_id TEXT NOT NULL,
+  block_id TEXT NOT NULL,
+  plain_text TEXT NOT NULL
+)''');
+    await database.execute('''
+CREATE TABLE search_terms (
+  segment_id TEXT NOT NULL REFERENCES search_segments(segment_id)
+    ON DELETE CASCADE,
+  term TEXT NOT NULL,
+  start_offset INTEGER NOT NULL,
+  PRIMARY KEY(segment_id, term)
+)''');
+    await database.execute(
+      'CREATE INDEX search_segments_book ON search_segments(book_id)',
+    );
+    await database.execute(
+      'CREATE INDEX search_terms_term ON search_terms(term)',
+    );
+    final rows = await database.rawQuery('''
+SELECT chapters.book_id, chapter_content.content_json
+FROM chapters
+JOIN chapter_content ON chapter_content.chapter_id = chapters.id
+ORDER BY chapters.book_id, chapters.spine_order''');
+    final batch = database.batch();
+    for (final row in rows) {
+      final chapter = Chapter.fromJson(
+        (jsonDecode(row['content_json'] as String) as Map)
+            .cast<String, Object?>(),
+      );
+      for (final segment in searchableSegments(
+        row['book_id'] as String,
+        chapter,
+      )) {
+        batch.rawInsert(
+          '''INSERT INTO search_segments
+(segment_id, book_id, chapter_id, block_id, plain_text)
+VALUES (?, ?, ?, ?, ?)''',
+          [
+            segment.segmentId,
+            segment.bookId,
+            segment.chapterId,
+            segment.blockId,
+            segment.plainText,
+          ],
+        );
+        for (final term in indexedSearchTerms(segment.plainText)) {
+          batch.rawInsert(
+            '''INSERT INTO search_terms (segment_id, term, start_offset)
+VALUES (?, ?, ?)''',
+            [segment.segmentId, term.term, term.startOffset],
+          );
+        }
+      }
+    }
     await batch.commit(noResult: true);
   }
 }

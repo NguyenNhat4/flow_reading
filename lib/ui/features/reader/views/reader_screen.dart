@@ -6,6 +6,7 @@ import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.da
 import 'package:flow_reading/ui/features/reader/views/reader_layout_controls.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_action_menu.dart';
 import 'package:flow_reading/ui/features/reader/views/saved_items_panel.dart';
+import 'package:flow_reading/ui/features/reader/views/search_panel.dart';
 import 'package:flow_reading/ui/features/reader/views/swipeable_reader.dart';
 import 'package:flow_reading/ui/features/reader/views/table_of_contents.dart';
 import 'package:flutter/material.dart';
@@ -177,6 +178,27 @@ class _ReaderScreenState extends State<ReaderScreen>
     }
   }
 
+  Future<void> _showSearch() async {
+    final anchor = await showModalBottomSheet<TextAnchor>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => ReaderSearchPanel(
+        viewModel: widget.viewModel,
+        onOpenResult: (result) =>
+            Navigator.of(sheetContext).pop(result.locator.anchor),
+      ),
+    );
+    if (anchor == null || !mounted) return;
+    if (!widget.viewModel.navigateToAnchor(anchor)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This search result could not be opened.'),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -238,11 +260,21 @@ class _ReaderScreenState extends State<ReaderScreen>
                       tooltip: 'More reader actions',
                       enabled: viewModel.isLoaded,
                       onSelected: (action) {
-                        if (action == _ReaderMenuAction.layout) {
-                          _changeLayout();
+                        switch (action) {
+                          case _ReaderMenuAction.search:
+                            _showSearch();
+                          case _ReaderMenuAction.layout:
+                            _changeLayout();
                         }
                       },
                       itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: _ReaderMenuAction.search,
+                          child: ListTile(
+                            leading: Icon(Icons.search),
+                            title: Text('Search this book'),
+                          ),
+                        ),
                         PopupMenuItem(
                           value: _ReaderMenuAction.layout,
                           child: ListTile(
@@ -267,7 +299,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 }
 
-enum _ReaderMenuAction { layout }
+enum _ReaderMenuAction { search, layout }
 
 class _ReaderBody extends StatelessWidget {
   const _ReaderBody({required this.viewModel, required this.onActionSelected});
