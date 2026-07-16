@@ -223,6 +223,12 @@ navigation. Reopening loads the stored `bookId`, chapter and block IDs, UTF-16
 character offset, and UTC update time, then selects the temporary page containing
 that logical locator.
 
+Reader layout preferences are loaded with canonical content before the first
+pagination. The layout sheet keeps edits in a draft; Apply saves the current
+locator and the device-global settings before rebuilding pagination. Font,
+spacing, margin, text-scale, and viewport changes all restore the temporary page
+containing that locator rather than reusing its previous page number.
+
 ## Implementation order
 
 ```text

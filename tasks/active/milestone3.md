@@ -89,6 +89,8 @@ updatedAt
 
 ## TASK-305 — Preserve position after repagination
 
+**Status:** Complete
+
 **Priority:** P0
 
 When the user changes layout:

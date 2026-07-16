@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flow_reading/books/book_models.dart';
 import 'package:flow_reading/books/book_repository.dart';
 import 'package:flow_reading/books/text_anchors.dart';
+import 'package:flow_reading/reader/reader_layout_controls.dart';
 import 'package:flow_reading/reader/swipeable_reader.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
@@ -30,12 +31,14 @@ class ReaderScreen extends StatefulWidget {
     required this.book,
     required this.bookRepository,
     required this.positionRepository,
+    required this.settingsRepository,
     super.key,
   });
 
   final BookSummary book;
   final BookRepository bookRepository;
   final ReadingPositionRepository positionRepository;
+  final ReaderSettingsRepository settingsRepository;
 
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
@@ -46,6 +49,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   late final Future<List<Chapter>> _loading = _load();
   Future<void> _saveTail = Future<void>.value();
   ReadingLocator? _locator;
+  ReaderSettings _settings = ReaderSettings.defaults;
   bool _allowPop = false;
   bool _closing = false;
 
@@ -59,10 +63,12 @@ class _ReaderScreenState extends State<ReaderScreen>
     final results = await Future.wait<Object?>([
       widget.bookRepository.loadChapters(widget.book.id),
       widget.positionRepository.load(widget.book.id),
+      widget.settingsRepository.load(),
     ]);
     final chapters = results[0]! as List<Chapter>;
     final saved = results[1] as ReadingPosition?;
     _locator = saved?.locator;
+    _settings = results[2]! as ReaderSettings;
     return chapters;
   }
 
@@ -112,6 +118,28 @@ class _ReaderScreenState extends State<ReaderScreen>
     Navigator.of(context).pop(result);
   }
 
+  Future<void> _changeLayout() async {
+    final updated = await showModalBottomSheet<ReaderSettings>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => ReaderLayoutControls(settings: _settings),
+    );
+    if (updated == null || updated == _settings || !mounted) return;
+    try {
+      await _enqueuePositionSave();
+      await widget.settingsRepository.save(updated);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reader settings could not be saved.')),
+        );
+      }
+      return;
+    }
+    if (mounted) setState(() => _settings = updated);
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -127,7 +155,16 @@ class _ReaderScreenState extends State<ReaderScreen>
         if (!didPop) unawaited(_closeReader(result));
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.book.title)),
+        appBar: AppBar(
+          title: Text(widget.book.title),
+          actions: [
+            IconButton(
+              tooltip: 'Reader layout',
+              onPressed: _changeLayout,
+              icon: const Icon(Icons.text_fields),
+            ),
+          ],
+        ),
         body: FutureBuilder<List<Chapter>>(
           future: _loading,
           builder: (context, snapshot) {
@@ -144,7 +181,7 @@ class _ReaderScreenState extends State<ReaderScreen>
             }
             return SwipeableReader(
               chapters: snapshot.data!,
-              settings: ReaderSettings.defaults,
+              settings: _settings,
               initialLocator: _locator,
               onPositionChanged: _showPosition,
             );

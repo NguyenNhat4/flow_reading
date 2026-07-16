@@ -12,8 +12,10 @@ import 'package:flow_reading/platform/epub_picker.dart';
 import 'package:flow_reading/platform/local_book_file_storage.dart';
 import 'package:flow_reading/platform/mlkit_book_language_detector.dart';
 import 'package:flow_reading/platform/sqlite_book_repository.dart';
+import 'package:flow_reading/platform/sqlite_reader_settings_repository.dart';
 import 'package:flow_reading/platform/sqlite_reading_position_repository.dart';
 import 'package:flow_reading/reader/reader_screen.dart';
+import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -39,6 +41,7 @@ final class _LibraryServices {
     required this.importService,
     required this.picker,
     required this.positionRepository,
+    required this.settingsRepository,
     required this.removalService,
   });
 
@@ -47,6 +50,7 @@ final class _LibraryServices {
   final BookImportService importService;
   final AndroidEpubPicker picker;
   final ReadingPositionRepository positionRepository;
+  final ReaderSettingsRepository settingsRepository;
   final BookRemovalService removalService;
 
   static Future<_LibraryServices> create() async {
@@ -67,6 +71,7 @@ final class _LibraryServices {
       ),
       picker: AndroidEpubPicker(),
       positionRepository: SqliteReadingPositionRepository(database),
+      settingsRepository: SqliteReaderSettingsRepository(database),
       removalService: BookRemovalService(
         repository: repository,
         storage: storage,
@@ -230,6 +235,7 @@ class _LibraryScreenState extends State<_LibraryScreen> {
           book: book,
           bookRepository: widget.services.repository,
           positionRepository: widget.services.positionRepository,
+          settingsRepository: widget.services.settingsRepository,
         ),
       ),
     );

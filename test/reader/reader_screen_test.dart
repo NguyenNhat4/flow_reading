@@ -263,6 +263,7 @@ void main() {
                         book: _bookSummary,
                         bookRepository: _BookRepository(),
                         positionRepository: positions,
+                        settingsRepository: _SettingsRepository(),
                       ),
                     ),
                   );
@@ -290,6 +291,89 @@ void main() {
 
     expect(find.text('Open book'), findsOneWidget);
     expect(find.text('Local Book'), findsNothing);
+  });
+
+  testWidgets('layout changes preserve the current logical passage', (
+    tester,
+  ) async {
+    final positions = _PositionRepository();
+    final settings = _SettingsRepository();
+    final text = List.filled(500, 'preserve ').join();
+    await _pumpReader(
+      tester,
+      books: _BookRepository(
+        chapters: [
+          _chapterWithText('chapter-1', 'Long chapter', 'block-1', text),
+        ],
+      ),
+      positions: positions,
+      settings: settings,
+    );
+    await _swipeNext(tester);
+    final before = positions.saved.last.locator.anchor;
+    expect(before.startOffset, greaterThan(0));
+
+    await tester.tap(find.byTooltip('Reader layout'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const ValueKey('reader-font-size-slider')),
+      const Offset(120, 0),
+    );
+    await tester.drag(
+      find.byKey(const ValueKey('reader-line-height-slider')),
+      const Offset(80, 0),
+    );
+    await tester.drag(
+      find.byKey(const ValueKey('reader-horizontal-margin-slider')),
+      const Offset(100, 0),
+    );
+    await tester.drag(
+      find.byKey(const ValueKey('reader-vertical-margin-slider')),
+      const Offset(100, 0),
+    );
+    await tester.tap(find.byKey(const ValueKey('reader-layout-apply')));
+    await tester.pumpAndSettle();
+
+    expect(settings.saved, hasLength(1));
+    expect(settings.saved.single.fontSize, greaterThan(18));
+    expect(settings.saved.single.lineHeight, greaterThan(1.5));
+    expect(settings.saved.single.margins.left, greaterThan(24));
+    expect(settings.saved.single.margins.top, greaterThan(16));
+    final after = positions.saved.last.locator.anchor;
+    expect(after.blockId, before.blockId);
+    expect(after.startOffset, greaterThan(0));
+    expect(after.startOffset, lessThanOrEqualTo(before.startOffset));
+  });
+
+  testWidgets('viewport rotation preserves the current logical passage', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(600, 900);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    final positions = _PositionRepository();
+    final text = List.filled(500, 'rotate ').join();
+    await _pumpReader(
+      tester,
+      books: _BookRepository(
+        chapters: [
+          _chapterWithText('chapter-1', 'Long chapter', 'block-1', text),
+        ],
+      ),
+      positions: positions,
+    );
+    await _swipeNext(tester);
+    final before = positions.saved.last.locator.anchor;
+    expect(before.startOffset, greaterThan(0));
+
+    tester.view.physicalSize = const Size(900, 600);
+    await tester.pumpAndSettle();
+
+    final after = positions.saved.last.locator.anchor;
+    expect(after.blockId, before.blockId);
+    expect(after.startOffset, greaterThan(0));
+    expect(after.startOffset, lessThanOrEqualTo(before.startOffset));
   });
 
   testWidgets('renders mixed canonical fragments inside paginated pages', (
@@ -357,6 +441,7 @@ Future<void> _pumpReader(
   WidgetTester tester, {
   required _BookRepository books,
   required _PositionRepository positions,
+  _SettingsRepository? settings,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -370,10 +455,27 @@ Future<void> _pumpReader(
         ),
         bookRepository: books,
         positionRepository: positions,
+        settingsRepository: settings ?? _SettingsRepository(),
       ),
     ),
   );
   await tester.pumpAndSettle();
+}
+
+final class _SettingsRepository implements ReaderSettingsRepository {
+  _SettingsRepository({ReaderSettings? initial})
+    : initial = initial ?? ReaderSettings.defaults;
+
+  final ReaderSettings initial;
+  final List<ReaderSettings> saved = [];
+
+  @override
+  Future<ReaderSettings> load() async => initial;
+
+  @override
+  Future<void> save(ReaderSettings settings) async {
+    saved.add(settings);
+  }
 }
 
 Future<void> _swipeNext(WidgetTester tester) async {
