@@ -148,6 +148,8 @@ Return:
 
 ## TASK-508 — Add passage explanation
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**

@@ -306,6 +306,19 @@ logical reading position.
 AI settings expose provider and model metadata but never read a stored key back
 into the UI. A new key is validated before it replaces the securely stored key.
 
+### Passage explanation
+
+`PassageExplanation` separates a meaning-preserving simpler explanation from
+explicit source facts, interpretations, and an optional ambiguity warning.
+`GeneratePassageExplanationUseCase` checks the compatible cache before starting
+a provider stream. Its session forwards completion, failure, and cancellation
+as provider-independent domain events and caches only a parsed successful
+completion.
+
+The reader sheet keeps the exact selected passage visible while loading and
+offers Cancel. Failure and cancellation states retain the passage and expose
+Retry without moving the logical reader position.
+
 ### AI conversation
 
 `AiConversation`

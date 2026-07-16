@@ -62,6 +62,8 @@ class _LibraryBootstrap extends StatelessWidget {
         viewModel: dependencies.createReaderViewModel(book),
         createWordExplanationViewModel:
             dependencies.createWordExplanationViewModel,
+        createPassageExplanationViewModel:
+            dependencies.createPassageExplanationViewModel,
       ),
     ),
   );
