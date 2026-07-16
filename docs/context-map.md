@@ -25,7 +25,7 @@ Do not read every linked document by default.
 | Stable IDs and text anchors | `docs/invariants.md`, `docs/data-model.md`                           | `lib/books/`, `lib/shared/`        |
 | Library UI, search, sorting, and local opening | Import orchestration section of `docs/epub-import.md`, reading state in `docs/invariants.md` | `lib/app/`, `lib/reader/` |
 | Local book removal          | Storage lifecycle and repository sections of `docs/epub-import.md` | `lib/books/`, `lib/platform/`, `lib/app/` |
-| Pagination                  | Pagination section of `docs/architecture.md`, `docs/invariants.md`   | `lib/reader/`                      |
+| Pagination                  | Pagination section of `docs/architecture.md`, derived data in `docs/data-model.md`, `docs/invariants.md` | `lib/reader/` |
 | Reading position            | `docs/invariants.md`, reader section of `docs/architecture.md`       | `lib/reader/`                      |
 | Highlights and notes        | `docs/invariants.md`, annotation section of `docs/data-model.md`     | `lib/reader/`                      |
 | AI provider                 | Intelligence section of `docs/architecture.md`                       | `lib/intelligence/`                |

@@ -185,6 +185,21 @@ pagination remains derived and must never have a permanent `pages` table.
 Book import writes its book, chapter, and chapter-content rows in one database
 transaction. Database exceptions must be translated into application failures.
 
+## Pagination
+
+The reader paginates canonical chapter blocks in spine order using the effective
+reader layout and Flutter text measurement. Text blocks may split only at
+measured UTF-16 source offsets. Lists use a deterministic textual projection:
+item text is source content, a newline separates each item, and visual markers
+do not advance source offsets. Images are atomic source units with offsets
+`0..1` and currently use the reader placeholder height.
+
+Each temporary `PageBoundary` stores collapsed start and end-exclusive source
+anchors plus its layout key. The anchors may reference different blocks when a
+page spans blocks. Page indexes and layout keys remain derived navigation data;
+they must not replace logical reading positions and are never persisted in a
+`pages` table.
+
 ## Implementation order
 
 ```text

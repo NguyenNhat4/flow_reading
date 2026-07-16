@@ -254,8 +254,19 @@ Pagination is derived data.
 `PageBoundary`
 
 - `pageIndex`
-- `sourceRange`
+- `startAnchor`
+- `endAnchor`
 - `layoutKey`
+
+Boundary anchors are collapsed stable source positions. The end anchor is
+exclusive, and it may reference a different block from the start anchor when a
+page contains multiple blocks. Text block offsets use Dart UTF-16 string
+offsets. List offsets use item text separated by deterministic newlines while
+visual list markers consume no source offsets. Image blocks use the atomic
+range `0..1`.
+
+`PaginationResult` groups an ordered list of boundaries by chapter and layout
+key. Results are temporary in-memory data and can be discarded and rebuilt.
 
 Deleting pagination data must not delete:
 
