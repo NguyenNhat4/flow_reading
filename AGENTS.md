@@ -13,9 +13,46 @@ For every task, read only:
 1. This file.
 2. `docs/context-map.md`.
 3. The assigned task file under `tasks/active/`.
-4. Additional documents explicitly listed in the task file.
+4. Additional documents that are useful to the task.
 
 Do not read the full repository or all documentation unless the task requires it.
+
+## Local skills
+
+Task-specific workflow skills live under `.agents/skills/<skill-name>/SKILL.md`.
+
+For every task:
+
+1. After reading the context map and assigned task, identify the smallest set of
+   local skills whose descriptions match the work.
+2. Read every selected `SKILL.md` completely before implementation and list the
+   selected skills, in execution order, in the pre-implementation brief.
+3. Apply skill guidance only within the assigned task, approved modules, file
+   budget, and dependency rules.
+4. Treat repository instructions, critical invariants, task acceptance criteria,
+   and existing project conventions as higher priority than generic skill examples.
+5. Do not add a dependency, code-generation step, architectural layer, repository,
+   routing system, localization system, FFI setup, or integration-test harness only
+   because a skill demonstrates one. Add it only when the task requires it and
+   explain why existing project facilities are insufficient.
+6. If no installed skill matches, continue with the normal repository workflow.
+
+Common routing for this project:
+
+* Use `flutter-apply-architecture-best-practices` for state, data-boundary, or
+  feature-structure changes, while preserving this repository's flat modules.
+* Use `flutter-build-responsive-layout` for adaptive UI work and
+  `flutter-fix-layout-issues` when diagnosing a concrete constraint or overflow
+  failure.
+* Use `flutter-add-widget-test` for widget rendering and interaction coverage, and
+  `dart-add-unit-test` for isolated Dart behavior.
+* Use `dart-run-static-analysis` for analysis cleanup, but run the repository's
+  required `flutter analyze` command.
+* Use `flutter-add-integration-test` only when the task calls for a permanent
+  end-to-end test harness. A requested physical-device smoke test does not by itself
+  justify adding that harness.
+* Use the serialization, routing, localization, HTTP, FFI, mocking, coverage, and
+  runtime-error skills only when that exact concern is part of the assigned task.
 
 ## Approved modules
 
