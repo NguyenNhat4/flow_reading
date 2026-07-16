@@ -80,6 +80,8 @@ Build an AI context package containing:
 
 ## TASK-505 — Implement prompt templates
 
+**Status:** Complete
+
 **Priority:** P1
 
 Create versioned prompts for:

@@ -283,6 +283,15 @@ paragraph, nearby blocks, and relevant earlier passages. Context building uses
 a 12,000-character default budget, keeps selected text first, merges duplicate
 text while retaining all roles, and never uses a visual page number.
 
+### AI prompt templates
+
+`AiPromptRegistry` owns versioned prompts for word, passage, and grammar
+explanations, summary, translation, chapter overview, and chat. Templates render
+an `AiContextPackage` into an `AiProviderRequest`; provider adapters never own
+product prompt text. Cacheable artifact prompts request strict JSON schemas,
+while chat requests text. Every prompt requires fact-versus-interpretation
+separation and explicit uncertainty.
+
 ### AI conversation
 
 `AiConversation`
