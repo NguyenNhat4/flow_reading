@@ -234,6 +234,13 @@ persisted in the same global preferences. Theme changes update page paint and
 Android system-bar colors without invalidating page boundaries; the paper
 palette uses a warm surface with a dark-brown foreground for readable contrast.
 
+Reader table-of-contents navigation loads the canonical nested EPUB entries
+from `books.toc_json` through a platform repository. Selecting an entry resolves
+its chapter and optional block to a zero-offset logical locator, saves that
+locator, and rebuilds the temporary reader page at the page containing it. A
+chapter-only entry uses that chapter's first readable block; missing targets
+show a recoverable message and leave the current position unchanged.
+
 ## Implementation order
 
 ```text

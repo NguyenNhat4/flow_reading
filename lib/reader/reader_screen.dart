@@ -5,6 +5,7 @@ import 'package:flow_reading/books/book_repository.dart';
 import 'package:flow_reading/books/text_anchors.dart';
 import 'package:flow_reading/reader/reader_layout_controls.dart';
 import 'package:flow_reading/reader/swipeable_reader.dart';
+import 'package:flow_reading/reader/table_of_contents.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,6 +34,7 @@ class ReaderScreen extends StatefulWidget {
     required this.bookRepository,
     required this.positionRepository,
     required this.settingsRepository,
+    this.tableOfContentsRepository,
     super.key,
   });
 
@@ -40,6 +42,7 @@ class ReaderScreen extends StatefulWidget {
   final BookRepository bookRepository;
   final ReadingPositionRepository positionRepository;
   final ReaderSettingsRepository settingsRepository;
+  final TableOfContentsRepository? tableOfContentsRepository;
 
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
@@ -51,6 +54,9 @@ class _ReaderScreenState extends State<ReaderScreen>
   Future<void> _saveTail = Future<void>.value();
   ReadingLocator? _locator;
   ReaderSettings _settings = ReaderSettings.defaults;
+  List<Chapter> _chapters = const [];
+  List<TableOfContentsEntry> _tableOfContents = const [];
+  int _readerGeneration = 0;
   bool _allowPop = false;
   bool _closing = false;
 
@@ -65,15 +71,24 @@ class _ReaderScreenState extends State<ReaderScreen>
       widget.bookRepository.loadChapters(widget.book.id),
       widget.positionRepository.load(widget.book.id),
       widget.settingsRepository.load(),
+      widget.tableOfContentsRepository?.load(widget.book.id) ??
+          Future<List<TableOfContentsEntry>>.value(const []),
     ]);
     final chapters = results[0]! as List<Chapter>;
     final saved = results[1] as ReadingPosition?;
     _locator = saved?.locator;
     final settings = results[2]! as ReaderSettings;
+    final tableOfContents = results[3]! as List<TableOfContentsEntry>;
     if (mounted) {
-      setState(() => _settings = settings);
+      setState(() {
+        _settings = settings;
+        _chapters = chapters;
+        _tableOfContents = tableOfContents;
+      });
     } else {
       _settings = settings;
+      _chapters = chapters;
+      _tableOfContents = tableOfContents;
     }
     return chapters;
   }
@@ -146,6 +161,54 @@ class _ReaderScreenState extends State<ReaderScreen>
     if (mounted) setState(() => _settings = updated);
   }
 
+  Future<void> _showTableOfContents() async {
+    final reference = await showReaderTableOfContents(
+      context,
+      _tableOfContents,
+    );
+    if (reference == null || !mounted) return;
+    final chapter = _chapters.where(
+      (candidate) => candidate.id == reference.chapterId,
+    );
+    if (chapter.isEmpty) {
+      _showNavigationFailure();
+      return;
+    }
+    final blocks = [...chapter.single.blocks]
+      ..sort((left, right) => left.order.compareTo(right.order));
+    if (blocks.isEmpty) {
+      _showNavigationFailure();
+      return;
+    }
+    final requestedBlockId = reference.blockId;
+    final matchingBlocks = requestedBlockId == null
+        ? const <ContentBlock>[]
+        : blocks.where((block) => block.id == requestedBlockId).toList();
+    if (requestedBlockId != null && matchingBlocks.isEmpty) {
+      _showNavigationFailure();
+      return;
+    }
+    final block = matchingBlocks.isEmpty ? blocks.first : matchingBlocks.single;
+    final anchor = TextAnchor(
+      bookId: widget.book.id,
+      chapterId: chapter.single.id,
+      blockId: block.id,
+      startOffset: 0,
+      endOffset: 0,
+    );
+    setState(() {
+      _locator = ReadingLocator(anchor: anchor);
+      _readerGeneration++;
+    });
+    _savePositionWithoutBlocking();
+  }
+
+  void _showNavigationFailure() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('This section could not be opened.')),
+    );
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -174,6 +237,13 @@ class _ReaderScreenState extends State<ReaderScreen>
               systemOverlayStyle: systemUiStyle,
               actions: [
                 IconButton(
+                  tooltip: 'Table of contents',
+                  onPressed: _tableOfContents.isEmpty
+                      ? null
+                      : _showTableOfContents,
+                  icon: const Icon(Icons.list_alt),
+                ),
+                IconButton(
                   tooltip: 'Reader layout',
                   onPressed: _changeLayout,
                   icon: const Icon(Icons.text_fields),
@@ -197,6 +267,7 @@ class _ReaderScreenState extends State<ReaderScreen>
                   );
                 }
                 return SwipeableReader(
+                  key: ValueKey('reader-generation-$_readerGeneration'),
                   chapters: snapshot.data!,
                   settings: _settings,
                   initialLocator: _locator,

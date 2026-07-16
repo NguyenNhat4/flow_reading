@@ -7,6 +7,7 @@ import 'package:flow_reading/reader/flutter_content_measurer.dart';
 import 'package:flow_reading/reader/pagination_engine.dart';
 import 'package:flow_reading/reader/reader_screen.dart';
 import 'package:flow_reading/reader/swipeable_reader.dart';
+import 'package:flow_reading/reader/table_of_contents.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -101,6 +102,51 @@ void main() {
     await _swipePrevious(tester);
     expect(find.text('Read locally.', findRichText: true), findsOneWidget);
     expect(find.text('First chapter · Page 1 of 2'), findsOneWidget);
+  });
+
+  testWidgets('table of contents navigates by stable reference and saves it', (
+    tester,
+  ) async {
+    final positions = _PositionRepository();
+    await _pumpReader(
+      tester,
+      books: _BookRepository(),
+      positions: positions,
+      tableOfContents: _TableOfContentsRepository(
+        entries: const [
+          TableOfContentsEntry(
+            title: 'Part one',
+            reference: ChapterReference(chapterId: 'chapter-1'),
+            children: [
+              TableOfContentsEntry(
+                title: 'Second section',
+                reference: ChapterReference(
+                  chapterId: 'chapter-2',
+                  blockId: 'block-2',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.byTooltip('Table of contents'));
+    await tester.pumpAndSettle();
+    expect(find.text('Part one'), findsOneWidget);
+    expect(find.text('Second section'), findsOneWidget);
+
+    await tester.tap(find.text('Second section'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('No account required.', findRichText: true),
+      findsOneWidget,
+    );
+    final saved = positions.saved.last.locator.anchor;
+    expect(saved.chapterId, 'chapter-2');
+    expect(saved.blockId, 'block-2');
+    expect(saved.startOffset, 0);
   });
 
   testWidgets('long content advances by stable offsets within a chapter', (
@@ -442,6 +488,7 @@ Future<void> _pumpReader(
   required _BookRepository books,
   required _PositionRepository positions,
   _SettingsRepository? settings,
+  TableOfContentsRepository? tableOfContents,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -456,10 +503,20 @@ Future<void> _pumpReader(
         bookRepository: books,
         positionRepository: positions,
         settingsRepository: settings ?? _SettingsRepository(),
+        tableOfContentsRepository: tableOfContents,
       ),
     ),
   );
   await tester.pumpAndSettle();
+}
+
+final class _TableOfContentsRepository implements TableOfContentsRepository {
+  const _TableOfContentsRepository({required this.entries});
+
+  final List<TableOfContentsEntry> entries;
+
+  @override
+  Future<List<TableOfContentsEntry>> load(String bookId) async => entries;
 }
 
 final class _SettingsRepository implements ReaderSettingsRepository {

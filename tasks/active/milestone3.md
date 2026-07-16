@@ -130,6 +130,8 @@ Implement:
 
 ## TASK-307 — Add table-of-contents navigation
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**

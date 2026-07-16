@@ -14,7 +14,9 @@ import 'package:flow_reading/platform/mlkit_book_language_detector.dart';
 import 'package:flow_reading/platform/sqlite_book_repository.dart';
 import 'package:flow_reading/platform/sqlite_reader_settings_repository.dart';
 import 'package:flow_reading/platform/sqlite_reading_position_repository.dart';
+import 'package:flow_reading/platform/sqlite_table_of_contents_repository.dart';
 import 'package:flow_reading/reader/reader_screen.dart';
+import 'package:flow_reading/reader/table_of_contents.dart';
 import 'package:flow_reading/settings/reader_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -42,6 +44,7 @@ final class _LibraryServices {
     required this.picker,
     required this.positionRepository,
     required this.settingsRepository,
+    required this.tableOfContentsRepository,
     required this.removalService,
   });
 
@@ -51,6 +54,7 @@ final class _LibraryServices {
   final AndroidEpubPicker picker;
   final ReadingPositionRepository positionRepository;
   final ReaderSettingsRepository settingsRepository;
+  final TableOfContentsRepository tableOfContentsRepository;
   final BookRemovalService removalService;
 
   static Future<_LibraryServices> create() async {
@@ -72,6 +76,7 @@ final class _LibraryServices {
       picker: AndroidEpubPicker(),
       positionRepository: SqliteReadingPositionRepository(database),
       settingsRepository: SqliteReaderSettingsRepository(database),
+      tableOfContentsRepository: SqliteTableOfContentsRepository(database),
       removalService: BookRemovalService(
         repository: repository,
         storage: storage,
@@ -236,6 +241,7 @@ class _LibraryScreenState extends State<_LibraryScreen> {
           bookRepository: widget.services.repository,
           positionRepository: widget.services.positionRepository,
           settingsRepository: widget.services.settingsRepository,
+          tableOfContentsRepository: widget.services.tableOfContentsRepository,
         ),
       ),
     );
