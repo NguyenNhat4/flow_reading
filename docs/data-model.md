@@ -162,18 +162,33 @@ not visual pages. Creating the outbox does not enable synchronization.
 
 `ReaderSettings`
 
+- `schemaVersion`
 - `fontSize`
 - `fontFamily`
-- `lineSpacing`
+- `lineHeight`
 - `margins`
 - `theme`
-- `readingMode`
+- `orientation`
+- `languageMode`
 
-Reading modes:
+Reader settings are stored as one device-global record. Missing or malformed
+preferences fall back to defaults so local reading remains available. The
+initial defaults use the system font at size 18, line height 1.5, horizontal
+margins of 24 logical pixels, vertical margins of 16 logical pixels, the light
+theme, system orientation, and original-language mode.
+
+Language modes:
 
 - `original`
 - `vietnamese`
 - `mixed`
+
+`ReaderLayout` combines these persisted preferences with the available logical
+viewport size, text scale, and pagination algorithm version. Its deterministic
+cache key includes only inputs that affect page boundaries. Theme and preferred
+orientation are excluded because colors do not alter measurement and the
+effective orientation is already represented by viewport dimensions. Layout
+keys are derived cache identifiers and must not identify durable reading data.
 
 ### Annotation
 

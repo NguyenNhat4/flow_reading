@@ -36,7 +36,7 @@ Do not create a new top-level module without explicit approval.
 
 ```text
 books          -> platform, shared
-reader         -> books, platform, shared
+reader         -> books, settings, platform, shared
 intelligence   -> books, reader, platform, shared
 settings       -> platform, shared
 app            -> all feature modules

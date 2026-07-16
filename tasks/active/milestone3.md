@@ -3,6 +3,8 @@
 
 ## TASK-301 — Implement reader layout model
 
+**Status:** Complete
+
 **Priority:** P0
 
 Create configurable settings for:

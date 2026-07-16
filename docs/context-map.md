@@ -32,7 +32,7 @@ Do not read every linked document by default.
 | AI context builder          | Intelligence section of `docs/architecture.md`, `docs/invariants.md` | `lib/intelligence/`                |
 | Translation                 | Translation section of `docs/architecture.md`, `docs/invariants.md`  | `lib/intelligence/`, `lib/reader/` |
 | Chapter overview            | Intelligence section of `docs/architecture.md`                       | `lib/intelligence/`                |
-| Settings                    | Relevant task only                                                   | `lib/settings/`                    |
+| Reader settings and layout | Reader settings section of `docs/data-model.md`, settings and persistence sections of `docs/architecture.md` | `lib/settings/`, `lib/platform/` |
 | Local persistence           | Persistence section of `docs/architecture.md`, local persistence section of `docs/data-model.md` | `lib/platform/` |
 | Book repository             | Repository and database section of `docs/epub-import.md`, local persistence section of `docs/data-model.md` | `lib/books/`, `lib/platform/` |
 | Synchronization             | Sync section of `docs/architecture.md`, `docs/invariants.md`         | `lib/sync/`                        |
