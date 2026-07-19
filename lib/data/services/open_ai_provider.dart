@@ -68,17 +68,22 @@ final class OpenAiProvider implements AiProvider {
     final key = _validatedKey(apiKey);
     final client = _clientFactory();
     try {
+      final requestBody = jsonEncode(_requestBody(request, stream: false));
+      print('OpenAiProvider complete payload: $requestBody');
       final httpRequest = http.Request('POST', _baseUri.resolve('responses'))
         ..headers.addAll(_headers(key, json: true))
-        ..body = jsonEncode(_requestBody(request, stream: false));
+        ..body = requestBody;
       final response = await client.send(httpRequest);
       final body = await response.stream.bytesToString();
       if (response.statusCode != HttpStatus.ok) {
         throw _failureForResponse(response, body);
       }
+      print('OpenAiProvider complete response: $body');
       final responseJson = _jsonMap(body);
       final text = _responseText(responseJson);
-      if (text.isEmpty || responseJson['status'] != 'completed') {
+      final status = responseJson['status'] as String? ?? '';
+      if (text.isEmpty || (status != 'completed' && status != 'incomplete')) {
+        print('OpenAiProvider validation failed: status=$status, textLength=${text.length}');
         throw const AiProviderFailure();
       }
       return AiCompletion(
@@ -131,6 +136,8 @@ final class OpenAiProvider implements AiProvider {
     try {
       final key = _validatedKey(apiKey);
       client = _clientFactory();
+      final requestBody = jsonEncode(_requestBody(request, stream: true));
+      print('OpenAiProvider stream payload: $requestBody');
       final httpRequest =
           http.AbortableRequest(
               'POST',
@@ -138,7 +145,7 @@ final class OpenAiProvider implements AiProvider {
               abortTrigger: abort.future,
             )
             ..headers.addAll(_headers(key, json: true))
-            ..body = jsonEncode(_requestBody(request, stream: true));
+            ..body = requestBody;
       final response = await client.send(httpRequest);
       if (response.statusCode != HttpStatus.ok) {
         final body = await response.stream.bytesToString();
@@ -224,11 +231,9 @@ final class OpenAiProvider implements AiProvider {
       'text': {
         'format': {
           'type': 'json_schema',
-          'json_schema': {
-            'name': format.name,
-            'strict': true,
-            'schema': format.schema,
-          },
+          'name': format.name,
+          'strict': true,
+          'schema': format.schema,
         },
       },
   };

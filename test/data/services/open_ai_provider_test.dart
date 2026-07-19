@@ -140,10 +140,9 @@ void main() {
       final text = (requestJson['text'] as Map).cast<String, Object?>();
       final format = (text['format'] as Map).cast<String, Object?>();
       expect(format['type'], 'json_schema');
-      final jsonSchema = (format['json_schema'] as Map).cast<String, Object?>();
-      expect(jsonSchema['name'], 'word_explanation');
-      expect(jsonSchema['strict'], isTrue);
-      expect(jsonSchema['schema'], isA<Map>());
+      expect(format['name'], 'word_explanation');
+      expect(format['strict'], isTrue);
+      expect(format['schema'], isA<Map>());
     });
 
     test('maps rate limits, quota, and connectivity failures', () async {
