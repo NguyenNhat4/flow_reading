@@ -1,7 +1,7 @@
 # Decision Log
 
-## Fix OpenAI Responses API JSON Schema Structure
+## Fix OpenAI Responses API JSON Schema Structure & Add Console Logging
 
-- **What:** Wrap `name`, `strict`, and `schema` fields under a nested `"json_schema"` object inside the `"format"` block of OpenAI Responses API requests.
-- **Why:** The official OpenAI Responses API expects a nested structure instead of flat fields. The incorrect flat structure caused the API to reject requests with 400 Bad Request, leading to the "AI Provider could not complete the request" error in the app.
+- **What:** Reverted the request format back to flat fields (e.g., `name`, `strict`, `schema` placed directly under `text.format`) and added robust console log tracking for all API errors/exceptions in `OpenAiProvider`.
+- **Why:** The OpenAI Responses API specifications require a flat structure for `text.format` configuration parameters (e.g. `text.format.name`), unlike the top-level `response_format` configuration parameter used in the legacy Chat Completions API. Having added diagnostic printing allowed us to see that the nested structure was rejected with `Missing required parameter: 'text.format.name'`.
 - **When:** February 2026
