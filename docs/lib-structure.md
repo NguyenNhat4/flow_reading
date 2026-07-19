@@ -1,6 +1,6 @@
 # Codebase Structure (`lib/`)
 
-The application follows a clean architecture model across three layers.
+The application follows a best pratice architecture defined in flutter-apply-architecture-best-practices 
 
 ## Core Files & Folders
 
