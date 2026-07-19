@@ -68,11 +68,11 @@ final class OpenAiProvider implements AiProvider {
     final key = _validatedKey(apiKey);
     final client = _clientFactory();
     try {
-      final body = jsonEncode(_requestBody(request, stream: false));
-      print('OpenAiProvider complete payload: $body');
+      final requestBody = jsonEncode(_requestBody(request, stream: false));
+      print('OpenAiProvider complete payload: $requestBody');
       final httpRequest = http.Request('POST', _baseUri.resolve('responses'))
         ..headers.addAll(_headers(key, json: true))
-        ..body = body;
+        ..body = requestBody;
       final response = await client.send(httpRequest);
       final body = await response.stream.bytesToString();
       if (response.statusCode != HttpStatus.ok) {
@@ -133,8 +133,8 @@ final class OpenAiProvider implements AiProvider {
     try {
       final key = _validatedKey(apiKey);
       client = _clientFactory();
-      final body = jsonEncode(_requestBody(request, stream: true));
-      print('OpenAiProvider stream payload: $body');
+      final requestBody = jsonEncode(_requestBody(request, stream: true));
+      print('OpenAiProvider stream payload: $requestBody');
       final httpRequest =
           http.AbortableRequest(
               'POST',
@@ -142,7 +142,7 @@ final class OpenAiProvider implements AiProvider {
               abortTrigger: abort.future,
             )
             ..headers.addAll(_headers(key, json: true))
-            ..body = body;
+            ..body = requestBody;
       final response = await client.send(httpRequest);
       if (response.statusCode != HttpStatus.ok) {
         final body = await response.stream.bytesToString();
