@@ -78,6 +78,7 @@ final class OpenAiProvider implements AiProvider {
       if (response.statusCode != HttpStatus.ok) {
         throw _failureForResponse(response, body);
       }
+      print('OpenAiProvider complete response: $body');
       final responseJson = _jsonMap(body);
       final text = _responseText(responseJson);
       if (text.isEmpty || responseJson['status'] != 'completed') {
