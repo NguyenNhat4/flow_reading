@@ -2,7 +2,7 @@ import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/use_cases/paginate_chapter.dart';
-import 'package:flow_reading/ui/features/reader/view_models/flutter_content_measurer.dart';
+import 'package:flow_reading/ui/features/reader/services/flutter_content_measurer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 

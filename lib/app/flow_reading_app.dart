@@ -1,14 +1,14 @@
+import 'package:flow_reading/app/app_composition.dart';
 import 'package:flow_reading/domain/repositories/book_repository.dart';
-import 'package:flow_reading/ui/app/app_dependencies.dart';
 import 'package:flow_reading/ui/features/library/views/library_screen.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_screen.dart';
 import 'package:flutter/material.dart';
 
 /// Root widget and asynchronous application bootstrap.
 class FlowReadingApp extends StatelessWidget {
-  const FlowReadingApp({required this.dependencies, super.key});
+  const FlowReadingApp({required this.composition, super.key});
 
-  final Future<AppDependencies> dependencies;
+  final Future<AppComposition> composition;
 
   @override
   Widget build(BuildContext context) {
@@ -17,20 +17,20 @@ class FlowReadingApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
-      home: _LibraryBootstrap(dependencies: dependencies),
+      home: _LibraryBootstrap(composition: composition),
     );
   }
 }
 
 class _LibraryBootstrap extends StatelessWidget {
-  const _LibraryBootstrap({required this.dependencies});
+  const _LibraryBootstrap({required this.composition});
 
-  final Future<AppDependencies> dependencies;
+  final Future<AppComposition> composition;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<AppDependencies>(
-      future: dependencies,
+    return FutureBuilder<AppComposition>(
+      future: composition,
       builder: (context, snapshot) {
         final resolved = snapshot.data;
         if (resolved != null) {
@@ -54,18 +54,18 @@ class _LibraryBootstrap extends StatelessWidget {
 
   Future<void> _openBook(
     BuildContext context,
-    AppDependencies dependencies,
+    AppComposition composition,
     BookSummary book,
   ) => Navigator.of(context).push<void>(
     MaterialPageRoute(
       builder: (_) => ReaderScreen(
-        viewModel: dependencies.createReaderViewModel(book),
+        viewModel: composition.createReaderViewModel(book),
         createWordExplanationViewModel:
-            dependencies.createWordExplanationViewModel,
+            composition.createWordExplanationViewModel,
         createPassageExplanationViewModel:
-            dependencies.createPassageExplanationViewModel,
+            composition.createPassageExplanationViewModel,
         createGrammarExplanationViewModel:
-            dependencies.createGrammarExplanationViewModel,
+            composition.createGrammarExplanationViewModel,
       ),
     ),
   );

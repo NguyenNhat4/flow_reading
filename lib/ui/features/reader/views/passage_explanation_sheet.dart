@@ -30,6 +30,7 @@ class _PassageExplanationSheetState extends State<PassageExplanationSheet> {
     return ListenableBuilder(
       listenable: widget.viewModel,
       builder: (context, _) {
+        final state = widget.viewModel.state;
         final viewModel = widget.viewModel;
         return SafeArea(
           child: Padding(
@@ -63,7 +64,7 @@ class _PassageExplanationSheetState extends State<PassageExplanationSheet> {
                       child: Text('“${viewModel.selection.textSnapshot}”'),
                     ),
                   ),
-                  if (viewModel.isLoading) ...[
+                  if (state.isLoading) ...[
                     const SizedBox(height: 20),
                     const Center(child: CircularProgressIndicator()),
                     const SizedBox(height: 12),
@@ -75,7 +76,7 @@ class _PassageExplanationSheetState extends State<PassageExplanationSheet> {
                       icon: const Icon(Icons.stop_circle_outlined),
                       label: const Text('Cancel'),
                     ),
-                  ] else if (viewModel.errorMessage case final error?) ...[
+                  ] else if (state.errorMessage case final error?) ...[
                     const SizedBox(height: 16),
                     Text(
                       error,
@@ -88,8 +89,8 @@ class _PassageExplanationSheetState extends State<PassageExplanationSheet> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                     ),
-                  ] else if (viewModel.explanation case final explanation?) ...[
-                    if (viewModel.fromCache)
+                  ] else if (state.explanation case final explanation?) ...[
+                    if (state.fromCache)
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Chip(

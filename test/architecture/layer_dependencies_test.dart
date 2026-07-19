@@ -19,13 +19,17 @@ void main() {
 
       for (final import in imports) {
         if (path.startsWith('lib/domain/') &&
-            (import.startsWith('data/') || import.startsWith('ui/'))) {
+            (import.startsWith('app/') ||
+                import.startsWith('data/') ||
+                import.startsWith('ui/'))) {
           violations.add('$path imports $import');
         }
-        if (path.startsWith('lib/data/') && import.startsWith('ui/')) {
+        if (path.startsWith('lib/data/') &&
+            (import.startsWith('app/') || import.startsWith('ui/'))) {
           violations.add('$path imports $import');
         }
-        if (path.startsWith('lib/ui/features/') && import.startsWith('data/')) {
+        if (path.startsWith('lib/ui/features/') &&
+            (import.startsWith('app/') || import.startsWith('data/'))) {
           violations.add('$path imports $import');
         }
       }
@@ -35,6 +39,20 @@ void main() {
             multiLine: true,
           ).hasMatch(source)) {
         violations.add('$path imports Flutter');
+      }
+      if (path.startsWith('lib/domain/') &&
+          RegExp(
+            r"^import\s+'package:(sqflite|http|file_picker|path_provider|flutter_secure_storage|connectivity_plus|google_mlkit_language_id)/",
+            multiLine: true,
+          ).hasMatch(source)) {
+        violations.add('$path imports an infrastructure package');
+      }
+      if (path.startsWith('lib/domain/') &&
+          RegExp(
+            r"^import\s+'package:(?!flow_reading/)",
+            multiLine: true,
+          ).hasMatch(source)) {
+        violations.add('$path imports a non-project package');
       }
     }
 

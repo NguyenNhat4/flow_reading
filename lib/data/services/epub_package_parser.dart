@@ -1,58 +1,12 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flow_reading/data/models/epub_import_draft.dart';
 import 'package:flow_reading/data/services/epub_validator.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/content_identifiers.dart';
 import 'package:xml/xml.dart';
-
-final class EpubChapterDraft {
-  const EpubChapterDraft({
-    required this.id,
-    required this.sourceHref,
-    required this.title,
-    required this.order,
-    required this.mediaType,
-  });
-
-  final String id;
-  final String sourceHref;
-  final String title;
-  final int order;
-  final String mediaType;
-}
-
-final class EpubAssetDraft {
-  const EpubAssetDraft({
-    required this.id,
-    required this.sourceHref,
-    required this.mediaType,
-    required this.bytes,
-  });
-
-  final String id;
-  final String sourceHref;
-  final String mediaType;
-  final Uint8List bytes;
-}
-
-final class EpubImportDraft {
-  const EpubImportDraft({
-    required this.bookId,
-    required this.metadata,
-    required this.chapters,
-    required this.tableOfContents,
-    this.cover,
-  });
-
-  final String bookId;
-  final BookMetadata metadata;
-  final List<EpubChapterDraft> chapters;
-  final List<TableOfContentsEntry> tableOfContents;
-  final EpubAssetDraft? cover;
-}
 
 abstract final class EpubPackageParser {
   static EpubImportDraft parse(

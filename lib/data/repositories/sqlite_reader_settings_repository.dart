@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
@@ -24,7 +25,9 @@ final class SqliteReaderSettingsRepository implements ReaderSettingsRepository {
     try {
       final decoded = jsonDecode(rows.single['preferences_json'] as String);
       if (decoded is! Map) return ReaderSettings.defaults;
-      return ReaderSettings.fromJson(decoded.cast<String, Object?>());
+      return ReaderStateRecordCodec.decodeSettings(
+        decoded.cast<String, Object?>(),
+      );
     } catch (_) {
       return ReaderSettings.defaults;
     }
@@ -35,7 +38,9 @@ final class SqliteReaderSettingsRepository implements ReaderSettingsRepository {
     final database = await appDatabase.open();
     await database.insert('reader_preferences', {
       'id': 1,
-      'preferences_json': jsonEncode(settings.toJson()),
+      'preferences_json': jsonEncode(
+        ReaderStateRecordCodec.encodeSettings(settings),
+      ),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   });

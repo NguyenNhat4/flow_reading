@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
 import 'package:flow_reading/data/repositories/sqlite_book_repository.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
@@ -39,7 +40,10 @@ void main() {
     expect(summaries.single.title, 'Book');
     expect(summaries.single.authors, ['Author']);
     expect(summaries.single.coverPath, '/books/book_id/cover.jpg');
-    expect(metadata?.toJson(), book.metadata.toJson());
+    expect(
+      BookRecordCodec.encodeMetadata(metadata!),
+      BookRecordCodec.encodeMetadata(book.metadata),
+    );
     expect(chapters.map((chapter) => chapter.order), [0, 1]);
     expect(chapters.map((chapter) => chapter.id), ['chapter-1', 'chapter-2']);
     expect(await repository.containsContentHash(book.id), isTrue);

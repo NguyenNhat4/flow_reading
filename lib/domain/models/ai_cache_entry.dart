@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
 import 'package:flow_reading/domain/models/ai_context.dart';
 import 'package:flow_reading/domain/models/ai_prompt.dart';
 import 'package:flow_reading/domain/models/ai_provider_models.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
+import 'package:flow_reading/domain/services/sha256.dart';
 
 /// One successful AI artifact that can be reused without network access.
 final class AiCacheEntry {
@@ -142,42 +142,38 @@ final class AiCacheEntry {
     required String provider,
     required String model,
   }) =>
-      'ai_${sha256.convert(utf8.encode(jsonEncode([bookId, requestType.name, sourceRange?.toJson(), contentHash, contextFingerprint, promptId, promptVersion, provider, model])))}';
+      'ai_${sha256Hex(utf8.encode(jsonEncode([bookId, requestType.name, sourceRange?.toJson(), contentHash, contextFingerprint, promptId, promptVersion, provider, model])))}';
 }
 
 /// Creates hashes used to invalidate incompatible cached AI artifacts.
 abstract final class AiCacheFingerprints {
   static String content(String sourceText) =>
-      sha256.convert(utf8.encode(sourceText)).toString();
+      sha256Hex(utf8.encode(sourceText));
 
-  static String context(AiContextPackage context) => sha256
-      .convert(
-        utf8.encode(
-          jsonEncode({
-            'chapterTitle': context.chapterTitle,
-            'currentPosition': context.currentPosition.anchor.toJson(),
-            'passages': [
-              for (final passage in context.passages)
-                {
-                  'roles': passage.roles.map((role) => role.name).toList()
-                    ..sort(),
-                  'anchor': passage.anchor.toJson(),
-                  'text': passage.text,
-                },
-            ],
-            'recentMessages': [
-              for (final message in context.recentMessages)
-                {
-                  'role': message.role.name,
-                  'text': message.text,
-                  'referencedRanges': [
-                    for (final range in message.referencedRanges)
-                      range.toJson(),
-                  ],
-                },
-            ],
-          }),
-        ),
-      )
-      .toString();
+  static String context(AiContextPackage context) => sha256Hex(
+    utf8.encode(
+      jsonEncode({
+        'chapterTitle': context.chapterTitle,
+        'currentPosition': context.currentPosition.anchor.toJson(),
+        'passages': [
+          for (final passage in context.passages)
+            {
+              'roles': passage.roles.map((role) => role.name).toList()..sort(),
+              'anchor': passage.anchor.toJson(),
+              'text': passage.text,
+            },
+        ],
+        'recentMessages': [
+          for (final message in context.recentMessages)
+            {
+              'role': message.role.name,
+              'text': message.text,
+              'referencedRanges': [
+                for (final range in message.referencedRanges) range.toJson(),
+              ],
+            },
+        ],
+      }),
+    ),
+  );
 }

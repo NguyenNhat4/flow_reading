@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart';
+import 'package:flow_reading/domain/services/sha256.dart';
 
 /// Generates deterministic identifiers from canonical EPUB source data.
 abstract final class ContentIdentifiers {
@@ -66,7 +66,7 @@ abstract final class ContentIdentifiers {
   }
 
   static String _digest(String kind, List<int> bytes) {
-    return '${kind}_${sha256.convert(bytes)}';
+    return '${kind}_${sha256Hex(bytes)}';
   }
 
   static String _normalizeHref(String href) {

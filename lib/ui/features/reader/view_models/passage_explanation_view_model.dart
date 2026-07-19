@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flow_reading/domain/models/passage_explanation.dart';
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/use_cases/generate_passage_explanation.dart';
+import 'package:flow_reading/ui/core/ui_failure_mapper.dart';
+import 'package:flow_reading/ui/features/reader/view_models/explanation_state.dart';
 import 'package:flutter/foundation.dart';
 
 typedef CreatePassageExplanationViewModel =
@@ -21,41 +22,36 @@ final class PassageExplanationViewModel extends ChangeNotifier {
     required List<Chapter> chapters,
     required PassageSelection selection,
     required ReadingLocator currentPosition,
-  }) : this._(generate, chapters, selection, currentPosition);
+    UiFailureMapper failureMapper = const UiFailureMapper(),
+  }) : this._(generate, chapters, selection, currentPosition, failureMapper);
 
   PassageExplanationViewModel._(
     this._generate,
     this.chapters,
     this.selection,
     this.currentPosition,
+    this._failureMapper,
   );
 
   final GeneratePassageExplanationUseCase _generate;
   final List<Chapter> chapters;
   final PassageSelection selection;
   final ReadingLocator currentPosition;
+  final UiFailureMapper _failureMapper;
 
   PassageExplanationSession? _session;
   StreamSubscription<PassageExplanationEvent>? _subscription;
-  bool _isLoading = false;
-  PassageExplanation? _explanation;
-  bool _fromCache = false;
-  String? _errorMessage;
+  ExplanationState<PassageExplanation> _state = const ExplanationState();
   int _generation = 0;
   bool _disposed = false;
 
-  bool get isLoading => _isLoading;
-  PassageExplanation? get explanation => _explanation;
-  bool get fromCache => _fromCache;
-  String? get errorMessage => _errorMessage;
+  ExplanationState<PassageExplanation> get state => _state;
 
   Future<void> load() async {
     final generation = ++_generation;
     await _subscription?.cancel();
     await _session?.cancel();
-    _isLoading = true;
-    _explanation = null;
-    _errorMessage = null;
+    _state = const ExplanationState(status: ExplanationStatus.loading);
     _notify();
     try {
       final session = await _generate.start(
@@ -78,7 +74,7 @@ final class PassageExplanationViewModel extends ChangeNotifier {
   }
 
   Future<void> cancel() async {
-    if (!_isLoading) return;
+    if (!_state.isLoading) return;
     await _session?.cancel();
   }
 
@@ -88,9 +84,11 @@ final class PassageExplanationViewModel extends ChangeNotifier {
       case PassageExplanationCompleted(:final explanation, :final fromCache):
         _session = null;
         _subscription = null;
-        _explanation = explanation;
-        _fromCache = fromCache;
-        _isLoading = false;
+        _state = ExplanationState(
+          status: ExplanationStatus.success,
+          explanation: explanation,
+          fromCache: fromCache,
+        );
       case PassageExplanationFailed(:final error):
         _session = null;
         _subscription = null;
@@ -98,8 +96,10 @@ final class PassageExplanationViewModel extends ChangeNotifier {
       case PassageExplanationCancelled():
         _session = null;
         _subscription = null;
-        _isLoading = false;
-        _errorMessage = 'The explanation was cancelled.';
+        _state = const ExplanationState(
+          status: ExplanationStatus.cancelled,
+          errorMessage: 'The explanation was cancelled.',
+        );
     }
     _notify();
   }
@@ -111,12 +111,13 @@ final class PassageExplanationViewModel extends ChangeNotifier {
   }
 
   void _setFailure(Object error) {
-    _isLoading = false;
-    _errorMessage = switch (error) {
-      AppFailure(:final message) => message,
-      FormatException() => 'The AI response could not be understood.',
-      _ => 'The passage could not be explained.',
-    };
+    _state = ExplanationState(
+      status: ExplanationStatus.failure,
+      errorMessage: _failureMapper.message(
+        error,
+        fallback: 'The passage could not be explained.',
+      ),
+    );
   }
 
   void _notify() {

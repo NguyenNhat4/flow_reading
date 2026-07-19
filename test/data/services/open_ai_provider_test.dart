@@ -19,7 +19,7 @@ void main() {
             jsonEncode({
               'object': 'list',
               'data': [
-                {'id': 'gpt-5.6-luna'},
+                {'id': 'gpt-5-nano'},
               ],
             }),
             200,
@@ -81,7 +81,7 @@ void main() {
           }),
         );
         final request = AiProviderRequest(
-          model: 'gpt-5.6-luna',
+          model: 'gpt-5-nano',
           instructions: 'Explain the selected source.',
           input: 'Source text.',
           maxOutputTokens: 500,
@@ -100,7 +100,7 @@ void main() {
         expect(requestJson, isNot(contains('api_key')));
         expect(completion.text, 'A contextual explanation.');
         expect(completion.providerId, 'openai');
-        expect(completion.model, 'gpt-5.6-luna');
+        expect(completion.model, 'gpt-5-nano');
       },
     );
 
@@ -120,7 +120,7 @@ void main() {
       await provider.complete(
         apiKey: 'user-key',
         request: AiProviderRequest(
-          model: 'gpt-5.6-luna',
+          model: 'gpt-5-nano',
           instructions: 'Return structured output.',
           input: 'Word.',
           responseFormat: AiJsonResponseFormat(
@@ -197,7 +197,7 @@ void main() {
         'event: response.completed',
         'data: ${jsonEncode({
           'type': 'response.completed',
-          'response': {'status': 'completed', 'model': 'gpt-5.6-luna'},
+          'response': {'status': 'completed', 'model': 'gpt-5-nano'},
         })}',
         '',
       ].join('\n');
@@ -276,7 +276,7 @@ OpenAiProvider _providerReturning(
 );
 
 AiProviderRequest _request() => AiProviderRequest(
-  model: 'gpt-5.6-luna',
+  model: 'gpt-5-nano',
   instructions: 'Explain the passage.',
   input: 'Passage text.',
 );
@@ -288,7 +288,7 @@ String _error(String code) => jsonEncode({
 String _completionResponse({required String text}) => jsonEncode({
   'id': 'response-id',
   'status': 'completed',
-  'model': 'gpt-5.6-luna',
+  'model': 'gpt-5-nano',
   'output': [
     {
       'type': 'message',

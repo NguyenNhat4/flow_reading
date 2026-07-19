@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/domain/models/reader_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,17 +16,17 @@ void main() {
       languageMode: ReaderLanguageMode.mixed,
     );
 
-    final restored = ReaderSettings.fromJson(
-      (jsonDecode(jsonEncode(settings.toJson())) as Map)
-          .cast<String, Object?>(),
+    final encoded = ReaderStateRecordCodec.encodeSettings(settings);
+    final restored = ReaderStateRecordCodec.decodeSettings(
+      (jsonDecode(jsonEncode(encoded)) as Map).cast<String, Object?>(),
     );
 
     expect(restored, settings);
-    expect(settings.toJson()['schemaVersion'], ReaderSettings.schemaVersion);
+    expect(encoded['schemaVersion'], ReaderSettings.schemaVersion);
   });
 
   test('missing and unknown values use defaults', () {
-    final restored = ReaderSettings.fromJson({
+    final restored = ReaderStateRecordCodec.decodeSettings({
       'fontSize': 'large',
       'lineHeight': 10,
       'margins': {'left': -1, 'top': 30},

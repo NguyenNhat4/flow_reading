@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flow_reading/domain/repositories/book_repository.dart';
 import 'package:flow_reading/domain/use_cases/import_book.dart';
+import 'package:flow_reading/ui/core/ui_command_result.dart';
 import 'package:flow_reading/ui/features/library/view_models/library_catalog.dart';
 import 'package:flow_reading/ui/features/library/view_models/library_view_model.dart';
 import 'package:flow_reading/ui/features/settings/view_models/ai_settings_view_model.dart';
@@ -26,37 +27,46 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
+  bool _importDialogVisible = false;
+
   @override
   void initState() {
     super.initState();
+    widget.viewModel.addListener(_handleImportState);
     widget.viewModel.load();
   }
 
   @override
   void dispose() {
+    widget.viewModel.removeListener(_handleImportState);
     widget.viewModel.dispose();
     super.dispose();
   }
 
-  Future<void> _importBook() async {
-    try {
-      final operation = await widget.viewModel.selectImport();
-      if (operation == null || !mounted) return;
+  void _handleImportState() {
+    if (!mounted) return;
+    final importing = widget.viewModel.state.isImporting;
+    if (importing && !_importDialogVisible) {
+      _importDialogVisible = true;
       showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => _ImportProgressDialog(operation: operation),
+        builder: (_) => _ImportProgressDialog(viewModel: widget.viewModel),
       );
-      await widget.viewModel.finishImport(operation);
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-    } catch (error) {
-      if (!mounted) return;
+    } else if (!importing && _importDialogVisible) {
+      _importDialogVisible = false;
       final navigator = Navigator.of(context, rootNavigator: true);
       if (navigator.canPop()) navigator.pop();
+    }
+  }
+
+  Future<void> _importBook() async {
+    final result = await widget.viewModel.importSelectedBook();
+    if (!mounted) return;
+    if (result case UiCommandFailure<void>(:final message)) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -79,13 +89,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
     );
     if (confirmed != true) return;
-    try {
-      await widget.viewModel.remove(book);
-    } catch (error) {
-      if (!mounted) return;
+    final result = await widget.viewModel.remove(book);
+    if (!mounted) return;
+    if (result case UiCommandFailure<void>(:final message)) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -117,7 +126,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
     controller.dispose();
     if (language == null) return;
-    await widget.viewModel.updateLanguage(book, language);
+    final result = await widget.viewModel.updateLanguage(book, language);
+    if (!mounted) return;
+    if (result case UiCommandFailure<void>(:final message)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   Future<void> _openBook(BookSummary book) async {
@@ -142,6 +157,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       listenable: widget.viewModel,
       builder: (context, _) {
         final viewModel = widget.viewModel;
+        final state = viewModel.state;
         return Scaffold(
           appBar: AppBar(
             title: const Text('Flow Reading'),
@@ -161,20 +177,20 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
           body: Builder(
             builder: (context) {
-              if (viewModel.error != null) {
+              if (state.loadErrorMessage != null) {
                 return const Center(
                   child: Text('The library could not be loaded.'),
                 );
               }
-              if (viewModel.isLoading) {
+              if (state.isLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (viewModel.books.isEmpty) {
+              if (state.books.isEmpty) {
                 return const Center(
                   child: Text('Import an EPUB to start reading.'),
                 );
               }
-              final visibleBooks = viewModel.visibleBooks;
+              final visibleBooks = state.visibleBooks;
               return Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
@@ -200,7 +216,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: DropdownButton<LibrarySort>(
-                                value: viewModel.sort,
+                                value: state.sort,
                                 isExpanded: true,
                                 items: [
                                   for (final sort in LibrarySort.values)
@@ -401,28 +417,35 @@ class _BookCoverFallback extends StatelessWidget {
 }
 
 class _ImportProgressDialog extends StatelessWidget {
-  const _ImportProgressDialog({required this.operation});
+  const _ImportProgressDialog({required this.viewModel});
 
-  final ImportOperation operation;
+  final LibraryViewModel viewModel;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Importing EPUB'),
-      content: StreamBuilder<ImportProgress>(
-        stream: operation.progress,
-        initialData: const ImportProgress(ImportStage.validatingFile),
-        builder: (context, snapshot) => Column(
+      content: ListenableBuilder(
+        listenable: viewModel,
+        builder: (context, _) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const LinearProgressIndicator(),
             const SizedBox(height: 16),
-            Text(snapshot.data!.stage.label),
+            Text(
+              (viewModel.state.importProgress ??
+                      const ImportProgress(ImportStage.validatingFile))
+                  .stage
+                  .label,
+            ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: operation.cancel, child: const Text('Cancel')),
+        TextButton(
+          onPressed: viewModel.cancelImport,
+          child: const Text('Cancel'),
+        ),
       ],
     );
   }

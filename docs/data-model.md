@@ -272,7 +272,7 @@ shared `AppFailure` types before returning control to application or UI code.
 The initial implementation is `OpenAiProvider`, using `GET /v1/models` for
 credential and default-model validation and `POST /v1/responses` for completion
 and server-sent-event streaming. It sends `store: false`, uses abortable HTTP
-requests for cancellation, and defaults to `gpt-5.6-luna`.
+requests for cancellation, and defaults to the cost-minimized `gpt-5-nano`.
 
 ### AI context package
 

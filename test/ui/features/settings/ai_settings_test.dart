@@ -15,7 +15,7 @@ void main() {
     final viewModel = AiSettingsViewModel(
       credentialRepository: credentials,
       provider: provider,
-      model: 'gpt-5.6-luna',
+      model: 'gpt-5-nano',
     );
 
     expect(await viewModel.validateAndSave('invalid'), isFalse);
@@ -37,7 +37,7 @@ void main() {
             viewModel: AiSettingsViewModel(
               credentialRepository: credentials,
               provider: _Provider(),
-              model: 'gpt-5.6-luna',
+              model: 'gpt-5-nano',
             ),
           ),
         ),
@@ -50,7 +50,7 @@ void main() {
     );
     expect(field.obscureText, isTrue);
     expect(find.text('OpenAI'), findsOneWidget);
-    expect(find.text('gpt-5.6-luna'), findsOneWidget);
+    expect(find.text('gpt-5-nano'), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const ValueKey('ai-api-key-field')),

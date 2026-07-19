@@ -51,6 +51,7 @@ class _AiSettingsSheetState extends State<AiSettingsSheet> {
       listenable: widget.viewModel,
       builder: (context, _) {
         final viewModel = widget.viewModel;
+        final state = viewModel.state;
         return Padding(
           padding: EdgeInsets.fromLTRB(
             20,
@@ -84,11 +85,11 @@ class _AiSettingsSheetState extends State<AiSettingsSheet> {
                 Text('Model', style: Theme.of(context).textTheme.labelLarge),
                 Text(viewModel.model),
                 const SizedBox(height: 16),
-                if (viewModel.isLoading)
+                if (state.isLoading)
                   const LinearProgressIndicator()
                 else
                   Text(
-                    viewModel.isConfigured
+                    state.isConfigured
                         ? 'A validated key is stored securely on this device.'
                         : 'No AI key is configured.',
                     key: const ValueKey('ai-key-status'),
@@ -106,7 +107,7 @@ class _AiSettingsSheetState extends State<AiSettingsSheet> {
                     hintText: 'Enter a key to validate and save',
                   ),
                 ),
-                if (viewModel.errorMessage case final error?)
+                if (state.errorMessage case final error?)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
                     child: Text(
@@ -120,16 +121,16 @@ class _AiSettingsSheetState extends State<AiSettingsSheet> {
                 const SizedBox(height: 16),
                 FilledButton(
                   key: const ValueKey('validate-ai-key'),
-                  onPressed: viewModel.isValidating ? null : _save,
+                  onPressed: state.isValidating ? null : _save,
                   child: Text(
-                    viewModel.isValidating ? 'Validating…' : 'Validate & save',
+                    state.isValidating ? 'Validating…' : 'Validate & save',
                   ),
                 ),
-                if (viewModel.isConfigured) ...[
+                if (state.isConfigured) ...[
                   const SizedBox(height: 8),
                   TextButton(
                     key: const ValueKey('remove-ai-key'),
-                    onPressed: viewModel.isValidating ? null : _remove,
+                    onPressed: state.isValidating ? null : _remove,
                     child: const Text('Remove key'),
                   ),
                 ],

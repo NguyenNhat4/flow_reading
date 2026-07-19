@@ -11,10 +11,12 @@ typedef HttpClientFactory = http.Client Function();
 
 /// OpenAI Responses API adapter using a user-owned credential.
 final class OpenAiProvider implements AiProvider {
+  static const cheapestModel = 'gpt-5-nano';
+
   OpenAiProvider({
     HttpClientFactory? clientFactory,
     Uri? baseUri,
-    this.defaultModel = 'gpt-5.6-luna',
+    this.defaultModel = cheapestModel,
   }) : _clientFactory = clientFactory ?? http.Client.new,
        _baseUri = baseUri ?? Uri.parse('https://api.openai.com/v1/');
 

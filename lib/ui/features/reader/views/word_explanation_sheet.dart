@@ -31,6 +31,7 @@ class _WordExplanationSheetState extends State<WordExplanationSheet> {
     return ListenableBuilder(
       listenable: widget.viewModel,
       builder: (context, _) {
+        final state = widget.viewModel.state;
         final viewModel = widget.viewModel;
         return SafeArea(
           key: const ValueKey('word-explanation-sheet'),
@@ -56,16 +57,16 @@ class _WordExplanationSheetState extends State<WordExplanationSheet> {
                       ),
                     ],
                   ),
-                  if (viewModel.isLoading) ...[
+                  if (state.isLoading) ...[
                     const SizedBox(height: 24),
                     const Center(child: CircularProgressIndicator()),
                     const SizedBox(height: 12),
                     const Center(child: Text('Đang đọc câu chứa từ…')),
-                  ] else if (viewModel.errorMessage case final error?) ...[
+                  ] else if (state.errorMessage case final error?) ...[
                     const SizedBox(height: 16),
                     Text(error, key: const ValueKey('word-explanation-error')),
-                  ] else if (viewModel.explanation case final explanation?) ...[
-                    if (viewModel.fromCache)
+                  ] else if (state.explanation case final explanation?) ...[
+                    if (state.fromCache)
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Chip(

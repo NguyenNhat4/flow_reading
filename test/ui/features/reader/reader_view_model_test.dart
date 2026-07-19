@@ -76,7 +76,7 @@ void main() {
 
     expect(viewModel.isLoaded, isTrue);
     expect(viewModel.loadError, isNull);
-    expect(viewModel.highlightLoadError, isA<StateError>());
+    expect(viewModel.highlightLoadError, 'Highlights could not be loaded.');
     expect(viewModel.chapters, isNotEmpty);
     viewModel.dispose();
   });

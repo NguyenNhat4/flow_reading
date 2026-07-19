@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/ai_artifact_record_codec.dart';
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/ai_cache_entry.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
@@ -46,7 +48,7 @@ AND prompt_version IS NOT NULL''',
       'kind': entry.requestType.name,
       'source_range_json': entry.sourceRange == null
           ? null
-          : jsonEncode(entry.sourceRange!.toJson()),
+          : jsonEncode(ReaderStateRecordCodec.encodeAnchor(entry.sourceRange!)),
       'response_json': jsonEncode(entry.response),
       'provider': entry.provider,
       'model': entry.model,
@@ -59,7 +61,7 @@ AND prompt_version IS NOT NULL''',
   });
 
   static AiCacheEntry _fromRow(Map<String, Object?> row) =>
-      AiCacheEntry.fromJson({
+      AiArtifactRecordCodec.decode({
         'id': row['id'],
         'bookId': row['book_id'],
         'requestType': row['kind'],

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -118,7 +119,7 @@ CREATE TABLE ai_artifacts (
     await legacy.insert('chapter_content', {
       'chapter_id': 'chapter',
       'schema_version': 1,
-      'content_json': jsonEncode(_legacyChapter.toJson()),
+      'content_json': jsonEncode(BookRecordCodec.encodeChapter(_legacyChapter)),
     });
     await legacy.close();
 

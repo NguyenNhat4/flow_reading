@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
 import 'package:flow_reading/data/services/search_segments.dart';
-import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:sqflite/sqflite.dart';
 
 final class AppDatabase {
@@ -214,7 +214,7 @@ JOIN chapter_content ON chapter_content.chapter_id = chapters.id
 ORDER BY chapters.book_id, chapters.spine_order''');
     final batch = database.batch();
     for (final row in rows) {
-      final chapter = Chapter.fromJson(
+      final chapter = BookRecordCodec.decodeChapter(
         (jsonDecode(row['content_json'] as String) as Map)
             .cast<String, Object?>(),
       );

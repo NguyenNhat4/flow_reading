@@ -1,8 +1,6 @@
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
-
-typedef JsonMap = Map<String, Object?>;
+import 'package:flow_reading/domain/services/sha256.dart';
 
 enum ReaderTheme { light, dark, paper }
 
@@ -32,20 +30,6 @@ final class ReaderMargins {
   final double top;
   final double right;
   final double bottom;
-
-  JsonMap toJson() => {
-    'left': left,
-    'top': top,
-    'right': right,
-    'bottom': bottom,
-  };
-
-  factory ReaderMargins.fromJson(JsonMap json) => ReaderMargins(
-    left: _validDouble(json['left'], 0, 64) ?? defaults.left,
-    top: _validDouble(json['top'], 0, 64) ?? defaults.top,
-    right: _validDouble(json['right'], 0, 64) ?? defaults.right,
-    bottom: _validDouble(json['bottom'], 0, 64) ?? defaults.bottom,
-  );
 
   @override
   bool operator ==(Object other) =>
@@ -105,39 +89,6 @@ final class ReaderSettings {
   final ReaderTheme theme;
   final ReaderOrientation orientation;
   final ReaderLanguageMode languageMode;
-
-  JsonMap toJson() => {
-    'schemaVersion': schemaVersion,
-    'fontFamily': fontFamily,
-    'fontSize': fontSize,
-    'lineHeight': lineHeight,
-    'margins': margins.toJson(),
-    'theme': theme.name,
-    'orientation': orientation.name,
-    'languageMode': languageMode.name,
-  };
-
-  factory ReaderSettings.fromJson(JsonMap json) {
-    final margins = json['margins'];
-    return ReaderSettings(
-      fontFamily: json['fontFamily'] is String
-          ? json['fontFamily'] as String
-          : null,
-      fontSize: _validDouble(json['fontSize'], 12, 36) ?? defaults.fontSize,
-      lineHeight:
-          _validDouble(json['lineHeight'], 1, 2.4) ?? defaults.lineHeight,
-      margins: margins is Map
-          ? ReaderMargins.fromJson(margins.cast<String, Object?>())
-          : ReaderMargins.defaults,
-      theme: _enumValue(ReaderTheme.values, json['theme']) ?? defaults.theme,
-      orientation:
-          _enumValue(ReaderOrientation.values, json['orientation']) ??
-          defaults.orientation,
-      languageMode:
-          _enumValue(ReaderLanguageMode.values, json['languageMode']) ??
-          defaults.languageMode,
-    );
-  }
 
   @override
   bool operator ==(Object other) =>
@@ -215,24 +166,8 @@ final class ReaderLayout {
       _normalized(viewportHeight),
       _normalized(textScale),
     ];
-    return 'layout_${sha256.convert(utf8.encode(jsonEncode(payload)))}';
+    return 'layout_${sha256Hex(utf8.encode(jsonEncode(payload)))}';
   }
-}
-
-T? _enumValue<T extends Enum>(List<T> values, Object? name) {
-  if (name is! String) return null;
-  for (final value in values) {
-    if (value.name == name) return value;
-  }
-  return null;
-}
-
-double? _validDouble(Object? value, double minimum, double maximum) {
-  if (value is! num) return null;
-  final converted = value.toDouble();
-  return converted.isFinite && converted >= minimum && converted <= maximum
-      ? converted
-      : null;
 }
 
 void _validateRange(double value, String name, double minimum, double maximum) {

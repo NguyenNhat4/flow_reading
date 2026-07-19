@@ -31,6 +31,7 @@ class _GrammarExplanationSheetState extends State<GrammarExplanationSheet> {
     return ListenableBuilder(
       listenable: widget.viewModel,
       builder: (context, _) {
+        final state = widget.viewModel.state;
         final viewModel = widget.viewModel;
         return SafeArea(
           child: Padding(
@@ -63,14 +64,14 @@ class _GrammarExplanationSheetState extends State<GrammarExplanationSheet> {
                       child: Text('“${viewModel.selection.textSnapshot}”'),
                     ),
                   ),
-                  if (viewModel.isLoading) ...[
+                  if (state.isLoading) ...[
                     const SizedBox(height: 24),
                     const Center(child: CircularProgressIndicator()),
                     const SizedBox(height: 12),
                     const Center(
                       child: Text('Finding the grammar that matters…'),
                     ),
-                  ] else if (viewModel.errorMessage case final error?) ...[
+                  ] else if (state.errorMessage case final error?) ...[
                     const SizedBox(height: 16),
                     Text(
                       error,
@@ -83,8 +84,8 @@ class _GrammarExplanationSheetState extends State<GrammarExplanationSheet> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                     ),
-                  ] else if (viewModel.explanation case final explanation?) ...[
-                    if (viewModel.fromCache)
+                  ] else if (state.explanation case final explanation?) ...[
+                    if (state.fromCache)
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Chip(

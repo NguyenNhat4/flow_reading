@@ -1,92 +1,129 @@
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/repositories/ai_credential_repository.dart';
 import 'package:flow_reading/domain/repositories/ai_provider.dart';
+import 'package:flow_reading/ui/core/ui_failure_mapper.dart';
 import 'package:flutter/foundation.dart';
+
+/// Immutable presentation state for user-owned AI credentials.
+final class AiSettingsState {
+  const AiSettingsState({
+    this.isConfigured = false,
+    this.isLoading = false,
+    this.isValidating = false,
+    this.errorMessage,
+  });
+
+  final bool isConfigured;
+  final bool isLoading;
+  final bool isValidating;
+  final String? errorMessage;
+
+  AiSettingsState copyWith({
+    bool? isConfigured,
+    bool? isLoading,
+    bool? isValidating,
+    Object? errorMessage = _unset,
+  }) => AiSettingsState(
+    isConfigured: isConfigured ?? this.isConfigured,
+    isLoading: isLoading ?? this.isLoading,
+    isValidating: isValidating ?? this.isValidating,
+    errorMessage: identical(errorMessage, _unset)
+        ? this.errorMessage
+        : errorMessage as String?,
+  );
+}
+
+const _unset = Object();
 
 /// Presentation state for user-owned AI provider credentials.
 final class AiSettingsViewModel extends ChangeNotifier {
   AiSettingsViewModel({
-    required AiCredentialRepository credentialRepository,
-    required AiProvider provider,
-    required String model,
-  }) : this._(credentialRepository, provider, model);
-
-  AiSettingsViewModel._(this._credentialRepository, this._provider, this.model);
+    required this._credentialRepository,
+    required this._provider,
+    required this.model,
+    this._failureMapper = const UiFailureMapper(),
+  });
 
   final AiCredentialRepository _credentialRepository;
   final AiProvider _provider;
+  final UiFailureMapper _failureMapper;
   final String model;
 
-  bool _isConfigured = false;
-  bool _isLoading = false;
-  bool _isValidating = false;
-  String? _errorMessage;
+  AiSettingsState _state = const AiSettingsState();
   bool _disposed = false;
 
   String get providerName => 'OpenAI';
-  bool get isConfigured => _isConfigured;
-  bool get isLoading => _isLoading;
-  bool get isValidating => _isValidating;
-  String? get errorMessage => _errorMessage;
+  AiSettingsState get state => _state;
 
   Future<void> load() async {
-    _isLoading = true;
-    _errorMessage = null;
-    _notify();
+    _setState(_state.copyWith(isLoading: true, errorMessage: null));
     try {
-      _isConfigured = await _credentialRepository.contains(_provider.id);
+      final configured = await _credentialRepository.contains(_provider.id);
+      _setState(_state.copyWith(isConfigured: configured));
     } catch (error) {
-      _errorMessage = _message(error);
+      _setState(
+        _state.copyWith(
+          errorMessage: _failureMapper.message(
+            error,
+            fallback: 'AI settings could not be loaded.',
+          ),
+        ),
+      );
     } finally {
-      _isLoading = false;
-      _notify();
+      _setState(_state.copyWith(isLoading: false));
     }
   }
 
   Future<bool> validateAndSave(String apiKey) async {
     final key = apiKey.trim();
     if (key.isEmpty) {
-      _errorMessage = const InvalidApiKeyFailure().message;
-      _notify();
+      _setState(
+        _state.copyWith(errorMessage: const InvalidApiKeyFailure().message),
+      );
       return false;
     }
-    _isValidating = true;
-    _errorMessage = null;
-    _notify();
+    _setState(_state.copyWith(isValidating: true, errorMessage: null));
     try {
       await _provider.validateKey(key);
       await _credentialRepository.write(providerId: _provider.id, apiKey: key);
-      _isConfigured = true;
+      _setState(_state.copyWith(isConfigured: true));
       return true;
     } catch (error) {
-      _errorMessage = _message(error);
+      _setState(
+        _state.copyWith(
+          errorMessage: _failureMapper.message(
+            error,
+            fallback: 'AI settings could not be updated.',
+          ),
+        ),
+      );
       return false;
     } finally {
-      _isValidating = false;
-      _notify();
+      _setState(_state.copyWith(isValidating: false));
     }
   }
 
   Future<bool> removeKey() async {
-    _errorMessage = null;
+    _setState(_state.copyWith(errorMessage: null));
     try {
       await _credentialRepository.delete(_provider.id);
-      _isConfigured = false;
-      _notify();
+      _setState(_state.copyWith(isConfigured: false));
       return true;
     } catch (error) {
-      _errorMessage = _message(error);
-      _notify();
+      _setState(
+        _state.copyWith(
+          errorMessage: _failureMapper.message(
+            error,
+            fallback: 'AI settings could not be updated.',
+          ),
+        ),
+      );
       return false;
     }
   }
 
-  static String _message(Object error) => switch (error) {
-    AppFailure(:final message) => message,
-    _ => 'AI settings could not be updated.',
-  };
-
-  void _notify() {
+  void _setState(AiSettingsState state) {
+    _state = state;
     if (!_disposed) notifyListeners();
   }
 

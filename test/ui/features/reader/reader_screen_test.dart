@@ -19,7 +19,7 @@ import 'package:flow_reading/domain/repositories/table_of_contents_repository.da
 import 'package:flow_reading/domain/use_cases/build_ai_context.dart';
 import 'package:flow_reading/domain/use_cases/generate_word_explanation.dart';
 import 'package:flow_reading/domain/use_cases/paginate_chapter.dart';
-import 'package:flow_reading/ui/features/reader/view_models/flutter_content_measurer.dart';
+import 'package:flow_reading/ui/features/reader/services/flutter_content_measurer.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_selection.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
 import 'package:flow_reading/ui/features/reader/view_models/word_explanation_view_model.dart';

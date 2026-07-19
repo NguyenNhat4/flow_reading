@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
@@ -27,7 +28,7 @@ final class SqliteTableOfContentsRepository
       final decoded = jsonDecode(rows.single['toc_json'] as String) as List;
       return List.unmodifiable(
         decoded.map(
-          (value) => TableOfContentsEntry.fromJson(
+          (value) => BookRecordCodec.decodeTableOfContents(
             (value as Map).cast<String, Object?>(),
           ),
         ),
