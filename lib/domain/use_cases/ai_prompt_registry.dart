@@ -20,7 +20,7 @@ abstract final class AiPromptRegistry {
         name: 'word_explanation',
         schema: _wordSchema,
       ),
-      maxOutputTokens: 650,
+      maxOutputTokens: 16000,
     ),
     AiRequestType.passageExplanation: AiPromptTemplate(
       id: 'passage_explanation',
@@ -35,7 +35,7 @@ abstract final class AiPromptRegistry {
         name: 'passage_explanation',
         schema: _passageSchema,
       ),
-      maxOutputTokens: 1400,
+      maxOutputTokens: 16000,
     ),
     AiRequestType.grammarExplanation: AiPromptTemplate(
       id: 'grammar_explanation',
@@ -50,7 +50,7 @@ abstract final class AiPromptRegistry {
         name: 'grammar_explanation',
         schema: _grammarSchema,
       ),
-      maxOutputTokens: 1200,
+      maxOutputTokens: 16000,
     ),
     AiRequestType.summary: AiPromptTemplate(
       id: 'summary',
@@ -65,7 +65,7 @@ abstract final class AiPromptRegistry {
         name: 'summary',
         schema: _summarySchema,
       ),
-      maxOutputTokens: 1200,
+      maxOutputTokens: 16000,
     ),
     AiRequestType.translation: AiPromptTemplate(
       id: 'translation',
@@ -80,7 +80,7 @@ abstract final class AiPromptRegistry {
         name: 'translation',
         schema: _translationSchema,
       ),
-      maxOutputTokens: 1400,
+      maxOutputTokens: 16000,
     ),
     AiRequestType.chapterOverview: AiPromptTemplate(
       id: 'chapter_overview',
@@ -95,7 +95,7 @@ abstract final class AiPromptRegistry {
         name: 'chapter_overview',
         schema: _overviewSchema,
       ),
-      maxOutputTokens: 2200,
+      maxOutputTokens: 16000,
     ),
     AiRequestType.chat: AiPromptTemplate(
       id: 'reader_chat',
@@ -107,7 +107,7 @@ abstract final class AiPromptRegistry {
           'Refer to stable source passages when possible. Say when the supplied '
           'context is insufficient instead of inventing an answer.',
       responseFormat: const AiTextResponseFormat(),
-      maxOutputTokens: 1600,
+      maxOutputTokens: 16000,
     ),
   };
 

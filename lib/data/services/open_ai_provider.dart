@@ -81,7 +81,9 @@ final class OpenAiProvider implements AiProvider {
       print('OpenAiProvider complete response: $body');
       final responseJson = _jsonMap(body);
       final text = _responseText(responseJson);
-      if (text.isEmpty || responseJson['status'] != 'completed') {
+      final status = responseJson['status'] as String? ?? '';
+      if (text.isEmpty || (status != 'completed' && status != 'incomplete')) {
+        print('OpenAiProvider validation failed: status=$status, textLength=${text.length}');
         throw const AiProviderFailure();
       }
       return AiCompletion(
