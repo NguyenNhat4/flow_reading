@@ -17,6 +17,25 @@ For each task:
 4. Use the relevant skill for the task.
 5. If your task involves adding, removing, or changing the purpose of any file in the `lib/` directory, you MUST update `docs/lib-structure.md` (and its sub-layer files) to reflect these changes.
 
+## Session Routines (Clock-in & Clock-out)
+
+### At session start (clock in)
+1. Read `PROGRESS.md` for current state
+2. Read `DECISIONS.md` for important decisions
+3. Run `make check` to confirm repo is in consistent state
+4. Continue from `PROGRESS.md` "Next Steps" section
+
+### Before session end (clock out)
+1. Update `PROGRESS.md`
+2. Run `make check` to confirm consistent state
+3. Commit all completed work
+
+## Session Document and Checkpoint Roles
+
+* **Decision log (`DECISIONS.md`)**: Record important design decisions and reasons. No need for detailed design documents — just "what decision, why, when".
+* **Progress file (`PROGRESS.md`)**: The most basic state persistence file.
+* **Git commits as checkpoints**: Commit after completing each atomic unit of work. Commit messages should explain what was done and why. These are free, automatically versioned state snapshots.
+
 ## Approved application structure
 
 must follow architectural best pratices skill to implement feature.
