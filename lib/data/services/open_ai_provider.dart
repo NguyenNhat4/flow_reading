@@ -224,9 +224,11 @@ final class OpenAiProvider implements AiProvider {
       'text': {
         'format': {
           'type': 'json_schema',
-          'name': format.name,
-          'strict': true,
-          'schema': format.schema,
+          'json_schema': {
+            'name': format.name,
+            'strict': true,
+            'schema': format.schema,
+          },
         },
       },
   };
@@ -256,6 +258,7 @@ final class OpenAiProvider implements AiProvider {
     http.StreamedResponse response,
     String body,
   ) {
+    print('OpenAiProvider request failed: ${response.statusCode} - $body');
     final error = _errorMap(body);
     final code = error['code'] as String?;
     if (response.statusCode == HttpStatus.unauthorized) {
@@ -274,6 +277,7 @@ final class OpenAiProvider implements AiProvider {
   }
 
   static AppFailure _failureForEvent(AiJsonMap event) {
+    print('OpenAiProvider stream event failure: $event');
     final error = _nestedMap(event['error']);
     final code = error['code'] as String?;
     return switch (code) {
@@ -285,13 +289,16 @@ final class OpenAiProvider implements AiProvider {
     };
   }
 
-  static AppFailure _failureForException(Object error) => switch (error) {
-    AppFailure() => error,
-    SocketException() ||
-    TimeoutException() ||
-    http.ClientException() => const NetworkFailure(),
-    _ => const AiProviderFailure(),
-  };
+  static AppFailure _failureForException(Object error) {
+    print('OpenAiProvider exception: $error');
+    return switch (error) {
+      AppFailure() => error,
+      SocketException() ||
+      TimeoutException() ||
+      http.ClientException() => const NetworkFailure(),
+      _ => const AiProviderFailure(),
+    };
+  }
 
   static AiJsonMap _errorMap(String body) {
     try {
