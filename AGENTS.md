@@ -38,4 +38,4 @@ For each task:
 
 ## Approved application structure
 
-must follow architectural best pratices skill to implement feature.
+must follow architectural best pratices skill or flutter-apply-architecture-best-practices/skills to implement feature.
