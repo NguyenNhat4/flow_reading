@@ -41,6 +41,18 @@ final class DatabaseFailure extends AppFailure {
   });
 }
 
+final class CredentialStorageFailure extends AppFailure {
+  const CredentialStorageFailure({
+    super.message = 'Your AI provider key could not be loaded or saved.',
+  });
+}
+
+final class AiNotConfiguredFailure extends AppFailure {
+  const AiNotConfiguredFailure({
+    super.message = 'Add and validate an OpenAI API key in AI settings first.',
+  });
+}
+
 final class NetworkFailure extends AppFailure {
   const NetworkFailure({
     super.message = 'A network connection could not be established.',
@@ -50,6 +62,33 @@ final class NetworkFailure extends AppFailure {
 final class InvalidApiKeyFailure extends AppFailure {
   const InvalidApiKeyFailure({
     super.message = 'The AI provider API key is invalid.',
+  });
+}
+
+final class AiRateLimitFailure extends AppFailure {
+  const AiRateLimitFailure({
+    this.retryAfter,
+    super.message = 'The AI provider rate limit was reached. Try again later.',
+  });
+
+  final Duration? retryAfter;
+}
+
+final class AiQuotaFailure extends AppFailure {
+  const AiQuotaFailure({
+    super.message = 'The AI provider account has no available quota.',
+  });
+}
+
+final class AiRequestCancelledFailure extends AppFailure {
+  const AiRequestCancelledFailure({
+    super.message = 'The AI request was cancelled.',
+  });
+}
+
+final class AiContextLimitFailure extends AppFailure {
+  const AiContextLimitFailure({
+    super.message = 'Select a shorter passage to use this AI feature.',
   });
 }
 

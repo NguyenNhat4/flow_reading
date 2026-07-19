@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/highlight.dart';
-import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/highlight_repository.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -31,7 +31,9 @@ final class SqliteHighlightRepository implements HighlightRepository {
       'id': highlight.id,
       'book_id': highlight.bookId,
       'type': 'highlight',
-      'range_json': jsonEncode(highlight.range.toJson()),
+      'range_json': jsonEncode(
+        ReaderStateRecordCodec.encodeAnchor(highlight.range),
+      ),
       'note': null,
       'created_at': highlight.createdAt.toUtc().toIso8601String(),
       'updated_at': highlight.updatedAt.toUtc().toIso8601String(),
@@ -49,7 +51,7 @@ final class SqliteHighlightRepository implements HighlightRepository {
   });
 
   static Highlight _fromRow(Map<String, Object?> row) => Highlight(
-    range: TextAnchor.fromJson(
+    range: ReaderStateRecordCodec.decodeAnchor(
       (jsonDecode(row['range_json'] as String) as Map).cast<String, Object?>(),
     ),
     createdAt: DateTime.parse(row['created_at'] as String),

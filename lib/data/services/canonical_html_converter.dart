@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:flow_reading/data/services/epub_package_parser.dart';
+import 'package:flow_reading/data/models/canonical_epub_content.dart';
+import 'package:flow_reading/data/models/epub_import_draft.dart';
 import 'package:flow_reading/data/services/epub_validator.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
@@ -11,25 +11,6 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html;
 
 typedef AssetLocalPath = String Function(String assetId, String sourceHref);
-
-final class CanonicalAsset {
-  const CanonicalAsset({required this.asset, required this.bytes});
-
-  final BookAsset asset;
-  final Uint8List bytes;
-}
-
-final class CanonicalEpubContent {
-  const CanonicalEpubContent({
-    required this.chapters,
-    required this.tableOfContents,
-    required this.assets,
-  });
-
-  final List<Chapter> chapters;
-  final List<TableOfContentsEntry> tableOfContents;
-  final List<CanonicalAsset> assets;
-}
 
 abstract final class CanonicalHtmlConverter {
   static CanonicalEpubContent convert(

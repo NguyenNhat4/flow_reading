@@ -8,8 +8,13 @@ void main() {
       UnsupportedDrmFailure(),
       FileSystemFailure(),
       DatabaseFailure(),
+      CredentialStorageFailure(),
       NetworkFailure(),
       InvalidApiKeyFailure(),
+      AiRateLimitFailure(),
+      AiQuotaFailure(),
+      AiRequestCancelledFailure(),
+      AiContextLimitFailure(),
       AiProviderFailure(),
     ];
 

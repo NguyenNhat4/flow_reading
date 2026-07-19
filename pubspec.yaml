@@ -44,8 +44,6 @@ dependencies:
   http: ^1.6.0
   # Network-type observation; requests still handle connectivity failures.
   connectivity_plus: ^7.2.0
-  # Deterministic content-addressed IDs for canonical EPUB content.
-  crypto: ^3.0.7
   # Namespace-aware parsing for EPUB container and package documents.
   xml: ^6.6.1
   # Tolerant HTML5 parsing for real-world EPUB chapter markup.

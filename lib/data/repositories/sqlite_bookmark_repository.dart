@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/bookmark.dart';
-import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/bookmark_repository.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -30,7 +30,9 @@ final class SqliteBookmarkRepository implements BookmarkRepository {
     await database.insert('bookmarks', {
       'id': bookmark.id,
       'book_id': bookmark.bookId,
-      'anchor_json': jsonEncode(bookmark.locator.toJson()),
+      'anchor_json': jsonEncode(
+        ReaderStateRecordCodec.encodeLocator(bookmark.locator),
+      ),
       'created_at': bookmark.createdAt.toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   });
@@ -46,7 +48,7 @@ final class SqliteBookmarkRepository implements BookmarkRepository {
   });
 
   static Bookmark _fromRow(Map<String, Object?> row) => Bookmark(
-    locator: ReadingLocator.fromJson(
+    locator: ReaderStateRecordCodec.decodeLocator(
       (jsonDecode(row['anchor_json'] as String) as Map).cast<String, Object?>(),
     ),
     createdAt: DateTime.parse(row['created_at'] as String),

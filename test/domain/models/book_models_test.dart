@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
 import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -99,12 +100,15 @@ void main() {
       importedAt: DateTime.utc(2026, 7, 15),
     );
 
-    final encoded = jsonEncode(book.toJson());
-    final restored = Book.fromJson(
+    final encoded = jsonEncode(BookRecordCodec.encodeBook(book));
+    final restored = BookRecordCodec.decodeBook(
       (jsonDecode(encoded) as Map).cast<String, Object?>(),
     );
 
-    expect(restored.toJson(), book.toJson());
+    expect(
+      BookRecordCodec.encodeBook(restored),
+      BookRecordCodec.encodeBook(book),
+    );
     expect(restored.chapters.single.blocks, hasLength(4));
     expect(restored.chapters.single.blocks[0], isA<HeadingBlock>());
     expect(restored.chapters.single.blocks[1], isA<ParagraphBlock>());
@@ -129,8 +133,8 @@ void main() {
         blocks: [],
       ),
     ];
-    final json = chapters.map((chapter) => chapter.toJson()).toList();
-    final restored = json.map(Chapter.fromJson).toList();
+    final json = chapters.map(BookRecordCodec.encodeChapter).toList();
+    final restored = json.map(BookRecordCodec.decodeChapter).toList();
 
     expect(restored.map((chapter) => chapter.id), [
       'second-in-spine',
@@ -148,6 +152,9 @@ void main() {
       blocks: [],
     );
 
-    expect(jsonEncode(chapter.toJson()).toLowerCase(), isNot(contains('page')));
+    expect(
+      jsonEncode(BookRecordCodec.encodeChapter(chapter)).toLowerCase(),
+      isNot(contains('page')),
+    );
   });
 }

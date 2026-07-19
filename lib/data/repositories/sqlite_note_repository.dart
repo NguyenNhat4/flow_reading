@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/reader_note.dart';
-import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/note_repository.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -30,7 +30,7 @@ final class SqliteNoteRepository implements NoteRepository {
     await database.insert('notes', {
       'id': note.id,
       'book_id': note.bookId,
-      'range_json': jsonEncode(note.range.toJson()),
+      'range_json': jsonEncode(ReaderStateRecordCodec.encodeAnchor(note.range)),
       'note': note.body,
       'created_at': note.createdAt.toUtc().toIso8601String(),
       'updated_at': note.updatedAt.toUtc().toIso8601String(),
@@ -44,7 +44,7 @@ final class SqliteNoteRepository implements NoteRepository {
   });
 
   static ReaderNote _fromRow(Map<String, Object?> row) => ReaderNote(
-    range: TextAnchor.fromJson(
+    range: ReaderStateRecordCodec.decodeAnchor(
       (jsonDecode(row['range_json'] as String) as Map).cast<String, Object?>(),
     ),
     body: row['note'] as String,

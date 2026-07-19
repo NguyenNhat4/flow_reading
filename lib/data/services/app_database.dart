@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
 import 'package:flow_reading/data/services/search_segments.dart';
-import 'package:flow_reading/domain/models/book_models.dart';
 import 'package:sqflite/sqflite.dart';
 
 final class AppDatabase {
@@ -11,7 +11,7 @@ final class AppDatabase {
 
   AppDatabase._(this._factory, this._path);
 
-  static const schemaVersion = 2;
+  static const schemaVersion = 3;
 
   final DatabaseFactory _factory;
   final String? _path;
@@ -49,11 +49,13 @@ final class AppDatabase {
   ) async {
     if (oldVersion < 1) await _createVersion1(database, 1);
     if (oldVersion < 2) await _createVersion2(database);
+    if (oldVersion < 3) await _createVersion3(database);
   }
 
   static Future<void> _createLatest(Database database, int version) async {
     await _createVersion1(database, 1);
     await _createVersion2(database);
+    await _createVersion3(database);
   }
 
   static Future<void> _createVersion1(Database database, int version) async {
@@ -212,7 +214,7 @@ JOIN chapter_content ON chapter_content.chapter_id = chapters.id
 ORDER BY chapters.book_id, chapters.spine_order''');
     final batch = database.batch();
     for (final row in rows) {
-      final chapter = Chapter.fromJson(
+      final chapter = BookRecordCodec.decodeChapter(
         (jsonDecode(row['content_json'] as String) as Map)
             .cast<String, Object?>(),
       );
@@ -242,5 +244,20 @@ VALUES (?, ?, ?)''',
       }
     }
     await batch.commit(noResult: true);
+  }
+
+  static Future<void> _createVersion3(Database database) async {
+    await database.execute(
+      'ALTER TABLE ai_artifacts ADD COLUMN content_hash TEXT',
+    );
+    await database.execute(
+      'ALTER TABLE ai_artifacts ADD COLUMN context_fingerprint TEXT',
+    );
+    await database.execute(
+      'ALTER TABLE ai_artifacts ADD COLUMN prompt_id TEXT',
+    );
+    await database.execute(
+      'ALTER TABLE ai_artifacts ADD COLUMN prompt_version INTEGER',
+    );
   }
 }

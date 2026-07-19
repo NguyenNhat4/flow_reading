@@ -2,21 +2,39 @@ import 'dart:async';
 
 import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/ui/core/reader_theme.dart';
+import 'package:flow_reading/ui/features/reader/services/flutter_content_measurer.dart';
+import 'package:flow_reading/ui/features/reader/view_models/grammar_explanation_view_model.dart';
+import 'package:flow_reading/ui/features/reader/view_models/passage_explanation_view_model.dart';
+import 'package:flow_reading/ui/features/reader/view_models/reader_feature_controller.dart';
+import 'package:flow_reading/ui/features/reader/view_models/reader_pagination_view_model.dart';
 import 'package:flow_reading/ui/features/reader/view_models/reader_view_model.dart';
+import 'package:flow_reading/ui/features/reader/view_models/word_explanation_view_model.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_layout_controls.dart';
 import 'package:flow_reading/ui/features/reader/views/reader_action_menu.dart';
+import 'package:flow_reading/ui/features/reader/views/grammar_explanation_sheet.dart';
+import 'package:flow_reading/ui/features/reader/views/passage_explanation_sheet.dart';
 import 'package:flow_reading/ui/features/reader/views/saved_items_panel.dart';
 import 'package:flow_reading/ui/features/reader/views/search_panel.dart';
 import 'package:flow_reading/ui/features/reader/views/swipeable_reader.dart';
 import 'package:flow_reading/ui/features/reader/views/table_of_contents.dart';
+import 'package:flow_reading/ui/features/reader/views/word_explanation_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Displays a reader session whose state is owned by [ReaderViewModel].
 class ReaderScreen extends StatefulWidget {
-  const ReaderScreen({required this.viewModel, super.key});
+  const ReaderScreen({
+    required this.viewModel,
+    this.createWordExplanationViewModel,
+    this.createPassageExplanationViewModel,
+    this.createGrammarExplanationViewModel,
+    super.key,
+  });
 
   final ReaderViewModel viewModel;
+  final CreateWordExplanationViewModel? createWordExplanationViewModel;
+  final CreatePassageExplanationViewModel? createPassageExplanationViewModel;
+  final CreateGrammarExplanationViewModel? createGrammarExplanationViewModel;
 
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
@@ -26,10 +44,17 @@ class _ReaderScreenState extends State<ReaderScreen>
     with WidgetsBindingObserver {
   bool _allowPop = false;
   bool _closing = false;
+  late final ReaderFeatureController _feature;
 
   @override
   void initState() {
     super.initState();
+    _feature = ReaderFeatureController(
+      session: widget.viewModel,
+      pagination: ReaderPaginationViewModel(
+        measurer: const FlutterContentMeasurer(),
+      ),
+    );
     WidgetsBinding.instance.addObserver(this);
     unawaited(widget.viewModel.load());
   }
@@ -86,6 +111,18 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Future<void> _handleAction(ReaderActionRequest request) async {
+    if (request.action == ReaderAction.define) {
+      await _showWordExplanation(request);
+      return;
+    }
+    if (request.action == ReaderAction.explain) {
+      await _showPassageExplanation(request);
+      return;
+    }
+    if (request.action == ReaderAction.explainGrammar) {
+      await _showGrammarExplanation(request);
+      return;
+    }
     if (request.action == ReaderAction.addNote) {
       await _editNote(request.anchor);
       return;
@@ -103,6 +140,98 @@ class _ReaderScreenState extends State<ReaderScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${request.action.label} requires internet access.'),
+      ),
+    );
+  }
+
+  Future<void> _showWordExplanation(ReaderActionRequest request) async {
+    final createViewModel = widget.createWordExplanationViewModel;
+    if (createViewModel == null || !mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Word explanation is unavailable.')),
+      );
+      return;
+    }
+    final selection = WordSelection(
+      anchor: request.anchor,
+      textSnapshot: request.textSnapshot,
+    );
+    final currentPosition =
+        widget.viewModel.locator ?? ReadingLocator(anchor: request.anchor);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      enableDrag: false,
+      showDragHandle: false,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: WordExplanationSheet.heightFactor,
+        alignment: Alignment.bottomCenter,
+        child: WordExplanationSheet(
+          viewModel: createViewModel(
+            chapters: widget.viewModel.chapters,
+            selection: selection,
+            currentPosition: currentPosition,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showPassageExplanation(ReaderActionRequest request) async {
+    final createViewModel = widget.createPassageExplanationViewModel;
+    if (createViewModel == null || !mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passage explanation is unavailable.')),
+      );
+      return;
+    }
+    final selection = PassageSelection(
+      anchor: request.anchor,
+      textSnapshot: request.textSnapshot,
+    );
+    final currentPosition =
+        widget.viewModel.locator ?? ReadingLocator(anchor: request.anchor);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => PassageExplanationSheet(
+        viewModel: createViewModel(
+          chapters: widget.viewModel.chapters,
+          selection: selection,
+          currentPosition: currentPosition,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showGrammarExplanation(ReaderActionRequest request) async {
+    final createViewModel = widget.createGrammarExplanationViewModel;
+    if (createViewModel == null || !mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Grammar explanation is unavailable.')),
+      );
+      return;
+    }
+    final selection = PassageSelection(
+      anchor: request.anchor,
+      textSnapshot: request.textSnapshot,
+    );
+    final currentPosition =
+        widget.viewModel.locator ?? ReadingLocator(anchor: request.anchor);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => GrammarExplanationSheet(
+        viewModel: createViewModel(
+          chapters: widget.viewModel.chapters,
+          selection: selection,
+          currentPosition: currentPosition,
+        ),
       ),
     );
   }
@@ -203,7 +332,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     if (!_closing) widget.viewModel.saveForLifecycleChange();
-    widget.viewModel.dispose();
+    _feature.dispose();
     super.dispose();
   }
 
@@ -213,7 +342,8 @@ class _ReaderScreenState extends State<ReaderScreen>
       listenable: widget.viewModel,
       builder: (context, _) {
         final viewModel = widget.viewModel;
-        final theme = readerThemeData(viewModel.settings.theme);
+        final state = viewModel.state;
+        final theme = readerThemeData(state.settings.theme);
         final systemUiStyle = readerSystemUiStyle(theme.colorScheme);
         return Theme(
           key: const ValueKey('reader-theme'),
@@ -228,19 +358,19 @@ class _ReaderScreenState extends State<ReaderScreen>
               },
               child: Scaffold(
                 appBar: AppBar(
-                  title: Text(viewModel.book.title),
+                  title: Text(state.book.title),
                   systemOverlayStyle: systemUiStyle,
                   actions: [
                     IconButton(
                       tooltip: 'Table of contents',
-                      onPressed: viewModel.tableOfContents.isEmpty
+                      onPressed: state.tableOfContents.isEmpty
                           ? null
                           : _showTableOfContents,
                       icon: const Icon(Icons.list_alt),
                     ),
                     IconButton(
                       tooltip: 'Saved items',
-                      onPressed: viewModel.isLoaded ? _showSavedItems : null,
+                      onPressed: state.isLoaded ? _showSavedItems : null,
                       icon: const Icon(Icons.collections_bookmark_outlined),
                     ),
                     IconButton(
@@ -258,7 +388,7 @@ class _ReaderScreenState extends State<ReaderScreen>
                     ),
                     PopupMenuButton<_ReaderMenuAction>(
                       tooltip: 'More reader actions',
-                      enabled: viewModel.isLoaded,
+                      enabled: state.isLoaded,
                       onSelected: (action) {
                         switch (action) {
                           case _ReaderMenuAction.search:
@@ -288,6 +418,7 @@ class _ReaderScreenState extends State<ReaderScreen>
                 ),
                 body: _ReaderBody(
                   viewModel: viewModel,
+                  pagination: _feature.pagination,
                   onActionSelected: _handleAction,
                 ),
               ),
@@ -302,27 +433,34 @@ class _ReaderScreenState extends State<ReaderScreen>
 enum _ReaderMenuAction { search, layout }
 
 class _ReaderBody extends StatelessWidget {
-  const _ReaderBody({required this.viewModel, required this.onActionSelected});
+  const _ReaderBody({
+    required this.viewModel,
+    required this.pagination,
+    required this.onActionSelected,
+  });
 
   final ReaderViewModel viewModel;
+  final ReaderPaginationViewModel pagination;
   final ReaderActionHandler onActionSelected;
 
   @override
   Widget build(BuildContext context) {
-    if (!viewModel.isLoaded) {
+    final state = viewModel.state;
+    if (!state.isLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (viewModel.loadError != null) {
+    if (state.loadErrorMessage != null) {
       return const Center(child: Text('The book could not be opened.'));
     }
-    if (viewModel.chapters.isEmpty) {
+    if (state.chapters.isEmpty) {
       return const Center(child: Text('This book has no readable content.'));
     }
     return SwipeableReader(
-      key: ValueKey('reader-generation-${viewModel.readerGeneration}'),
-      chapters: viewModel.chapters,
-      settings: viewModel.settings,
-      initialLocator: viewModel.locator,
+      key: ValueKey('reader-generation-${state.readerGeneration}'),
+      chapters: state.chapters,
+      settings: state.settings,
+      pagination: pagination,
+      initialLocator: state.locator,
       highlights: viewModel.highlights,
       onPositionChanged: viewModel.showPosition,
       onActionSelected: onActionSelected,

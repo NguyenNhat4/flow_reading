@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
 import 'package:flow_reading/data/repositories/sqlite_book_repository.dart';
 import 'package:flow_reading/data/repositories/sqlite_table_of_contents_repository.dart';
 import 'package:flow_reading/data/services/app_database.dart';
@@ -67,6 +68,8 @@ void main() {
       database,
     ).load('book-id');
 
-    expect(restored.map((entry) => entry.toJson()), [entries.single.toJson()]);
+    expect(restored.map(BookRecordCodec.encodeTableOfContents), [
+      BookRecordCodec.encodeTableOfContents(entries.single),
+    ]);
   });
 }

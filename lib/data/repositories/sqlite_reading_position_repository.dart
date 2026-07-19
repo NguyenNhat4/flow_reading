@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
 import 'package:flow_reading/domain/models/reading_position.dart';
-import 'package:flow_reading/domain/models/text_anchors.dart';
 import 'package:flow_reading/domain/repositories/reading_position_repository.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -26,7 +26,7 @@ final class SqliteReadingPositionRepository
     final row = rows.single;
     return ReadingPosition(
       bookId: bookId,
-      locator: ReadingLocator.fromJson(
+      locator: ReaderStateRecordCodec.decodeLocator(
         (jsonDecode(row['anchor_json'] as String) as Map)
             .cast<String, Object?>(),
       ),
@@ -39,7 +39,9 @@ final class SqliteReadingPositionRepository
     final database = await appDatabase.open();
     await database.insert('reading_states', {
       'book_id': position.bookId,
-      'anchor_json': jsonEncode(position.locator.toJson()),
+      'anchor_json': jsonEncode(
+        ReaderStateRecordCodec.encodeLocator(position.locator),
+      ),
       'updated_at': position.updatedAt.toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   });

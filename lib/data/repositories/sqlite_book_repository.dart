@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flow_reading/data/models/book_record_codec.dart';
+import 'package:flow_reading/data/models/reader_state_record_codec.dart';
 import 'package:flow_reading/data/services/app_database.dart';
 import 'package:flow_reading/data/services/search_segments.dart';
 import 'package:flow_reading/domain/models/app_failure.dart';
@@ -21,13 +23,17 @@ final class SqliteBookRepository implements BookRepository {
         'content_hash': book.id,
         'title': book.metadata.title,
         'authors_json': jsonEncode(book.metadata.authors),
-        'metadata_json': jsonEncode(book.metadata.toJson()),
+        'metadata_json': jsonEncode(
+          BookRecordCodec.encodeMetadata(book.metadata),
+        ),
         'original_file': book.originalFile,
         'toc_json': jsonEncode(
-          book.tableOfContents.map((entry) => entry.toJson()).toList(),
+          book.tableOfContents
+              .map(BookRecordCodec.encodeTableOfContents)
+              .toList(),
         ),
         'assets_json': jsonEncode(
-          book.assets.map((asset) => asset.toJson()).toList(),
+          book.assets.map(BookRecordCodec.encodeAsset).toList(),
         ),
         'detected_language': book.detectedLanguage,
         'imported_at': book.importedAt.toIso8601String(),
@@ -43,7 +49,7 @@ final class SqliteBookRepository implements BookRepository {
         await transaction.insert('chapter_content', {
           'chapter_id': chapter.id,
           'schema_version': 1,
-          'content_json': jsonEncode(chapter.toJson()),
+          'content_json': jsonEncode(BookRecordCodec.encodeChapter(chapter)),
         });
         for (final segment in searchableSegments(book.id, chapter)) {
           await transaction.rawInsert(
@@ -89,7 +95,7 @@ ORDER BY chapters.book_id, chapters.spine_order''');
       chaptersByBook
           .putIfAbsent(bookId, () => [])
           .add(
-            Chapter.fromJson(
+            BookRecordCodec.decodeChapter(
               (jsonDecode(row['content_json'] as String) as Map)
                   .cast<String, Object?>(),
             ),
@@ -100,11 +106,12 @@ ORDER BY chapters.book_id, chapters.spine_order''');
           .cast<String>();
       final assets = (jsonDecode(row['assets_json'] as String) as List)
           .map(
-            (value) =>
-                BookAsset.fromJson((value as Map).cast<String, Object?>()),
+            (value) => BookRecordCodec.decodeAsset(
+              (value as Map).cast<String, Object?>(),
+            ),
           )
           .toList();
-      final metadata = BookMetadata.fromJson(
+      final metadata = BookRecordCodec.decodeMetadata(
         (jsonDecode(row['metadata_json'] as String) as Map)
             .cast<String, Object?>(),
       );
@@ -140,7 +147,7 @@ ORDER BY chapters.book_id, chapters.spine_order''');
       limit: 1,
     );
     if (rows.isEmpty) return null;
-    return BookMetadata.fromJson(
+    return BookRecordCodec.decodeMetadata(
       (jsonDecode(rows.single['metadata_json'] as String) as Map)
           .cast<String, Object?>(),
     );
@@ -159,7 +166,7 @@ ORDER BY chapters.spine_order''',
     );
     return rows
         .map(
-          (row) => Chapter.fromJson(
+          (row) => BookRecordCodec.decodeChapter(
             (jsonDecode(row['content_json'] as String) as Map)
                 .cast<String, Object?>(),
           ),
@@ -220,7 +227,7 @@ double _readingProgress(List<Chapter> chapters, String? locatorJson) {
   if (chapters.isEmpty || locatorJson == null) return 0;
   ReadingLocator locator;
   try {
-    locator = ReadingLocator.fromJson(
+    locator = ReaderStateRecordCodec.decodeLocator(
       (jsonDecode(locatorJson) as Map).cast<String, Object?>(),
     );
   } catch (_) {

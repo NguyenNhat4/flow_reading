@@ -3,6 +3,8 @@
 
 ## TASK-501 — Implement secure API-key storage
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**
@@ -15,6 +17,8 @@
 ---
 
 ## TASK-502 — Define AI provider interface
+
+**Status:** Complete
 
 **Priority:** P1
 
@@ -35,6 +39,8 @@ Create one common interface for:
 
 ## TASK-503 — Implement first AI provider
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**
@@ -47,6 +53,8 @@ Create one common interface for:
 ---
 
 ## TASK-504 — Implement context builder
+
+**Status:** Complete
 
 **Priority:** P1
 
@@ -72,6 +80,8 @@ Build an AI context package containing:
 
 ## TASK-505 — Implement prompt templates
 
+**Status:** Complete
+
 **Priority:** P1
 
 Create versioned prompts for:
@@ -94,6 +104,8 @@ Create versioned prompts for:
 
 ## TASK-506 — Implement AI artifact cache
 
+**Status:** Complete
+
 **Priority:** P1
 
 Cache:
@@ -112,6 +124,8 @@ Cache:
 ---
 
 ## TASK-507 — Add word explanation
+
+**Status:** Complete
 
 **Priority:** P1
 
@@ -134,6 +148,8 @@ Return:
 
 ## TASK-508 — Add passage explanation
 
+**Status:** Complete
+
 **Priority:** P1
 
 **Acceptance criteria:**
@@ -146,6 +162,8 @@ Return:
 ---
 
 ## TASK-509 — Add grammar explanation
+
+**Status:** Complete
 
 **Priority:** P2
 
